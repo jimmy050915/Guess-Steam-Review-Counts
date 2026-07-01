@@ -45,6 +45,9 @@
     "schemaVersion": 1,
     "maxEntriesPerBucket": 80
   },
+  "history": {
+    "guessedGamesPageSize": 100
+  },
   "video": {
     "trimStartSeconds": 10,
     "trimEndSeconds": 10,

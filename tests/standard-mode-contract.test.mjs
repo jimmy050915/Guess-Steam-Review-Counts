@@ -55,6 +55,7 @@ test("standard mode data declares queue, filters and review buckets", async () =
   assert.equal(config.selection.storeSearchMaxStart, 5000);
   assert.equal(config.candidatePool.path, ".cache/standard-candidate-pool.json");
   assert.equal(config.candidatePool.maxEntriesPerBucket, 80);
+  assert.equal(config.history.guessedGamesPageSize, 100);
   assert.equal(config.video.trimStartSeconds, 10);
   assert.equal(config.video.trimEndSeconds, 10);
   assert.equal(config.video.minimumPlayableSecondsAfterTrim, 10);
@@ -313,6 +314,14 @@ test("standard runner validates guesses, reveals results, refills queue and pers
     assert.equal(safeMissGuess.streak, 2);
     assert.equal(safeMissGuess.runBestStreak, 2);
 
+    const guessedHistory = await runner.listGuessedGames(session, { page: 1 });
+    assert.equal(guessedHistory.pageSize, 100);
+    assert.equal(guessedHistory.totalItems, 2);
+    assert.deepEqual(guessedHistory.items.map((game) => game.appId), [2, 1]);
+    assert.equal(guessedHistory.items[0].name, "Game 2");
+    assert.equal(guessedHistory.items[0].coverUrl, "https://cdn.example/2.jpg");
+    assert.equal(guessedHistory.items.some((game) => game.appId === 3), false);
+
     await runner.next(session);
 
     const firstDamagedGuess = await runner.guess(session, { reviewCountGuess: 100 });
@@ -340,6 +349,59 @@ test("standard runner validates guesses, reveals results, refills queue and pers
     assert.equal(record.highScore, 101);
     assert.equal(record.bestStreak, 2);
     assert.deepEqual(record.guessedAppIds.slice(0, 5), [1, 2, 3, 4, 5]);
+    assert.deepEqual(record.guessedGames.slice(0, 5).map((game) => game.appId), [1, 2, 3, 4, 5]);
+    assert.equal(record.guessedGames[0].name, "Game 1");
+    assert.equal(typeof record.guessedGames[0].guessedAt, "string");
+
+    const clearedHistory = await runner.clearHistory(session);
+    assert.equal(clearedHistory.totalItems, 0);
+    assert.deepEqual(clearedHistory.items, []);
+
+    const clearedRecord = await store.getPlayerRecord(session.steamId);
+    assert.equal(clearedRecord.highScore, 0);
+    assert.equal(clearedRecord.bestStreak, 0);
+    assert.equal(clearedRecord.completedRuns, 0);
+    assert.deepEqual(clearedRecord.guessedAppIds, []);
+    assert.deepEqual(clearedRecord.guessedGames, []);
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("standard runner hydrates legacy guessed app ids for the history page", async () => {
+  const config = await readJson("data/game/standard-mode.json");
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "gsc-standard-history-"));
+  const storePath = path.join(tempDir, "standard-mode-store.json");
+
+  try {
+    const store = createStandardModeStore({ storePath });
+    const session = { steamId: "76561198000000002" };
+    const hydratedCandidate = createCandidate(42, "1000-1999");
+    const catalog = {
+      async findCandidate() {
+        return createCandidate(100, "1000-1999");
+      },
+      async loadHistoryGame(appId) {
+        assert.equal(appId, 42);
+        return hydratedCandidate;
+      }
+    };
+    const runner = createStandardModeRunner({ config, catalog, store });
+
+    await store.updatePlayerRecord(session.steamId, (record) => ({
+      ...record,
+      guessedAppIds: [42]
+    }));
+
+    const history = await runner.listGuessedGames(session, { page: 1 });
+    assert.equal(history.totalItems, 1);
+    assert.equal(history.items[0].appId, 42);
+    assert.equal(history.items[0].name, "Game 42");
+    assert.equal(history.items[0].coverUrl, "https://cdn.example/42.jpg");
+
+    const record = await store.getPlayerRecord(session.steamId);
+    assert.equal(record.guessedGames[0].name, "Game 42");
+    assert.equal(record.guessedGames[0].coverUrl, "https://cdn.example/42.jpg");
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }

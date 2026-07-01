@@ -83,27 +83,37 @@ const server = createServer(async (request, response) => {
     }
 
     if (requestUrl.pathname === "/api/standard/state") {
-      await handleStandardApi(request, response, "state");
+      await handleStandardApi(request, response, "state", requestUrl);
       return;
     }
 
     if (requestUrl.pathname === "/api/standard/guess") {
-      await handleStandardApi(request, response, "guess");
+      await handleStandardApi(request, response, "guess", requestUrl);
       return;
     }
 
     if (requestUrl.pathname === "/api/standard/next") {
-      await handleStandardApi(request, response, "next");
+      await handleStandardApi(request, response, "next", requestUrl);
       return;
     }
 
     if (requestUrl.pathname === "/api/standard/skip-short-video") {
-      await handleStandardApi(request, response, "skip-short-video");
+      await handleStandardApi(request, response, "skip-short-video", requestUrl);
       return;
     }
 
     if (requestUrl.pathname === "/api/standard/restart") {
-      await handleStandardApi(request, response, "restart");
+      await handleStandardApi(request, response, "restart", requestUrl);
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/standard/guessed-games") {
+      await handleStandardApi(request, response, "guessed-games", requestUrl);
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/standard/guessed-games/clear") {
+      await handleStandardApi(request, response, "clear-history", requestUrl);
       return;
     }
 
@@ -136,7 +146,7 @@ function handleSteamLogin(_request, response, requestUrl) {
   ]);
 }
 
-async function handleStandardApi(request, response, action) {
+async function handleStandardApi(request, response, action, requestUrl) {
   const session = getRequestSession(request);
 
   try {
@@ -161,6 +171,20 @@ async function handleStandardApi(request, response, action) {
     if (action === "skip-short-video") {
       assertMethod(request, "POST");
       json(response, await standardModeRunner.skipShortVideo(session, await readJsonBody(request)));
+      return;
+    }
+
+    if (action === "guessed-games") {
+      assertMethod(request, "GET");
+      json(response, await standardModeRunner.listGuessedGames(session, {
+        page: requestUrl.searchParams.get("page")
+      }));
+      return;
+    }
+
+    if (action === "clear-history") {
+      assertMethod(request, "POST");
+      json(response, await standardModeRunner.clearHistory(session));
       return;
     }
 
@@ -257,7 +281,7 @@ function getRequestSession(request) {
 }
 
 async function serveStatic(requestUrl, response) {
-  const clientRoutePaths = new Set(["/", "/game/standard"]);
+  const clientRoutePaths = new Set(["/", "/game/standard", "/history/guessed"]);
   const pathname = clientRoutePaths.has(requestUrl.pathname)
     ? "/src/client/index.html"
     : decodeURIComponent(requestUrl.pathname);

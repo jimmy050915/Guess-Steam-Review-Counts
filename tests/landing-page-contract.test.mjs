@@ -41,11 +41,16 @@ test("app data declares bilingual login and main menu flow", async () => {
   assert.equal(config.appState.authenticatedScreenId, "main-menu");
   assert.equal(config.appState.sessionSource, "server-cookie");
   assert.equal(config.layout.screens.find((screen) => screen.id === "standard-game").routePath, "/game/standard");
+  assert.equal(config.layout.screens.find((screen) => screen.id === "guessed-games").routePath, "/history/guessed");
   assert.equal(config.standardGame.api.statePath, "/api/standard/state");
   assert.equal(config.standardGame.api.guessPath, "/api/standard/guess");
   assert.equal(config.standardGame.api.nextPath, "/api/standard/next");
   assert.equal(config.standardGame.api.skipShortVideoPath, "/api/standard/skip-short-video");
   assert.equal(config.standardGame.api.restartPath, "/api/standard/restart");
+  assert.equal(config.guessedGames.api.listPath, "/api/standard/guessed-games");
+  assert.equal(config.guessedGames.api.clearPath, "/api/standard/guessed-games/clear");
+  assert.equal(config.guessedGames.layout.kind, "paged-history-list");
+  assert.equal(config.guessedGames.layout.allowsCards, false);
   assert.equal(config.standardGame.input.min, 50);
   assert.equal(config.auth.provider, "steam-openid");
   assert.equal(config.auth.loginPath, "/auth/steam");
@@ -65,6 +70,9 @@ test("app data declares bilingual login and main menu flow", async () => {
     durationMs: 160,
     reducedMotion: "none"
   });
+  assert.deepEqual(config.mainMenu.navigation.map((item) => [item.id, item.path]), [
+    ["guessed-games", "/history/guessed"]
+  ]);
   assert.equal(config.mainMenu.modes.length, 1);
   const standardMode = config.mainMenu.modes[0];
   assert.equal(standardMode.id, "standard-mode");
@@ -100,6 +108,7 @@ test("app data declares bilingual login and main menu flow", async () => {
   assert.equal(localeBundles["zh-CN"]["mainMenu.heading"], "主菜单");
   assert.equal(localeBundles["zh-CN"]["mainMenu.standardMode.button"], "标准模式");
   assert.equal(localeBundles["zh-CN"]["mainMenu.standardMode.readyButton"], "再次点击开始游戏");
+  assert.equal(localeBundles["zh-CN"]["mainMenu.guessedGames.button"], "猜过的游戏");
   assert.equal(localeBundles["zh-CN"]["mainMenu.standardMode.description.heading"], "标准模式");
   assert.equal(localeBundles["zh-CN"]["mainMenu.standardMode.description.body"], "三条生命，按误差率获得100到1分，猜测误差超过200%则损失生命。");
   assert.equal(localeBundles["zh-CN"]["mainMenu.standardMode.filters.heading"], "标准过滤集");
@@ -116,6 +125,9 @@ test("app data declares bilingual login and main menu flow", async () => {
   assert.equal(localeBundles["zh-CN"]["game.standard.result.score"], "本轮得分");
   assert.equal(localeBundles["zh-CN"]["game.standard.gameOver"], "游戏结束");
   assert.equal(localeBundles["zh-CN"]["game.standard.noRecordNotice"], "暂无");
+  assert.equal(localeBundles["zh-CN"]["history.guessed.heading"], "猜过的游戏");
+  assert.equal(localeBundles["zh-CN"]["history.guessed.clear"], "清空历史记录");
+  assert.equal(localeBundles["zh-CN"]["history.guessed.pageStatus"], "第 {page} / {totalPages} 页");
   assert.equal(localeBundles["en-US"]["mainMenu.standardMode.readyButton"], "Click again to start");
   assert.equal(
     localeBundles["zh-CN"]["landing.intro"],
@@ -147,6 +159,11 @@ test("client assets avoid framed layouts and preserve the pressed login motion",
   assert.match(clientScript, /config\.standardGame\.api\.nextPath/);
   assert.match(clientScript, /config\.standardGame\.api\.skipShortVideoPath/);
   assert.match(clientScript, /config\.standardGame\.api\.restartPath/);
+  assert.match(clientScript, /config\.guessedGames\.api\.listPath/);
+  assert.match(clientScript, /config\.guessedGames\.api\.clearPath/);
+  assert.match(clientScript, /loadGuessedGames\(1\)/);
+  assert.match(clientScript, /clearGuessedGamesHistory/);
+  assert.match(clientScript, /showModal/);
   assert.match(clientScript, /result\.errorPercent/);
   assert.match(clientScript, /formatPercent\(result\.errorPercent\)/);
   assert.match(clientScript, /result\.score/);
@@ -165,9 +182,12 @@ test("client assets avoid framed layouts and preserve the pressed login motion",
   assert.match(clientScript, /resolveAuthenticatedScreenId\(\)/);
   assert.match(clientScript, /event\.target\.closest\("\.mode-button"\)/);
   assert.match(clientScript, /setActiveMode\(null\)/);
-  assert.match(serverScript, /new Set\(\["\/", "\/game\/standard"\]\)/);
+  assert.match(serverScript, /new Set\(\["\/", "\/game\/standard", "\/history\/guessed"\]\)/);
   assert.match(serverScript, /\/api\/standard\/state/);
   assert.match(serverScript, /\/api\/standard\/skip-short-video/);
+  assert.match(serverScript, /\/api\/standard\/guessed-games/);
+  assert.match(serverScript, /standardModeRunner\.listGuessedGames/);
+  assert.match(serverScript, /standardModeRunner\.clearHistory/);
   assert.match(serverScript, /standardModeRunner\.guess/);
   assert.match(html, /href="\/src\/client\/styles\.css"/);
   assert.match(html, /src="\/src\/client\/main\.js"/);
@@ -176,6 +196,15 @@ test("client assets avoid framed layouts and preserve the pressed login motion",
   assert.match(html, /id="accountSteamId"/);
   assert.match(html, /id="logoutButton"/);
   assert.match(html, /id="mainMenuScreen"/);
+  assert.match(html, /id="menuNavigation"/);
+  assert.match(html, /id="guessedGamesScreen"/);
+  assert.match(html, /id="guessedGamesTitle"/);
+  assert.match(html, /id="guessedGamesList"/);
+  assert.match(html, /id="guessedGamesPreviousButton"/);
+  assert.match(html, /id="guessedGamesNextButton"/);
+  assert.match(html, /id="guessedGamesClearButton"/);
+  assert.match(html, /id="guessedGamesClearDialog"/);
+  assert.match(html, /id="guessedGamesClearConfirmButton"/);
   assert.match(html, /id="standardGameScreen"/);
   assert.match(html, /id="standardGameTitle"/);
   assert.match(html, /id="standardGameVideo"/);
@@ -205,6 +234,13 @@ test("client assets avoid framed layouts and preserve the pressed login motion",
   assert.match(css, /\.menu-stage\.is-describing \.mode-description\s*\{[^}]*transform:\s*translateX\(0\)/s);
   assert.match(css, /\.mode-description-layout\s*\{[^}]*justify-content:\s*space-between/s);
   assert.match(css, /\.mode-description-records\s*\{/);
+  assert.match(css, /\.menu-navigation\s*\{/);
+  assert.match(css, /\.menu-link-button\s*\{/);
+  assert.match(css, /\.history-stage\s*\{/);
+  assert.match(css, /\.history-list\s*\{/);
+  assert.match(css, /\.history-game-link\s*\{/);
+  assert.match(css, /\.history-pagination\s*\{/);
+  assert.match(css, /\.history-dialog\s*\{/);
   assert.match(css, /\.game-stage\s*\{/);
   assert.match(css, /\.game-play-layout\s*\{/);
   assert.match(css, /\.video-area\s*\{/);

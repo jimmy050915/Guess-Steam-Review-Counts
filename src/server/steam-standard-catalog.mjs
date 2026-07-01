@@ -158,6 +158,34 @@ export function createSteamStandardCatalog({
     return candidate;
   }
 
+  async function findPooledCandidateByAppId(appId) {
+    if (typeof candidatePool?.findCandidateByAppId !== "function") {
+      return null;
+    }
+
+    const candidate = await candidatePool.findCandidateByAppId(appId);
+    if (!candidate) {
+      return null;
+    }
+
+    if (!isVideoPlayableAfterTrim(candidate.video?.durationSeconds, config.video)) {
+      await candidatePool.removeCandidate(candidate.appId);
+      rejectedAppIds.add(candidate.appId);
+      return null;
+    }
+
+    return candidate;
+  }
+
+  async function loadHistoryGame(appId) {
+    const pooledCandidate = await findPooledCandidateByAppId(appId);
+    if (pooledCandidate) {
+      return pooledCandidate;
+    }
+
+    return loadCandidate(appId);
+  }
+
   async function cacheCandidate(candidate) {
     if (candidatePool) {
       await candidatePool.addCandidate(candidate);
@@ -343,6 +371,7 @@ export function createSteamStandardCatalog({
   return {
     findCandidate,
     rejectCandidate,
+    loadHistoryGame,
     loadCandidate,
     loadAppList
   };

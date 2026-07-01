@@ -23,6 +23,23 @@ export function createStandardCandidatePool({
     return null;
   }
 
+  async function findCandidateByAppId(appId) {
+    const numericAppId = Number(appId);
+    if (!Number.isInteger(numericAppId)) {
+      return null;
+    }
+
+    const store = await readStore();
+    for (const candidates of Object.values(store.buckets)) {
+      const candidate = candidates.find((entry) => entry.appId === numericAppId);
+      if (candidate) {
+        return cloneCandidate(candidate);
+      }
+    }
+
+    return null;
+  }
+
   async function addCandidate(candidate) {
     if (!isPoolCandidate(candidate)) {
       return;
@@ -112,6 +129,7 @@ export function createStandardCandidatePool({
 
   return {
     addCandidate,
+    findCandidateByAppId,
     findCandidate,
     removeCandidate,
     readStore

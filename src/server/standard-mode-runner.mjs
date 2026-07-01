@@ -75,7 +75,7 @@ export function createStandardModeRunner({ config, catalog, store, random = Math
     };
     run.lastGame = currentGame;
 
-    await addGuessedAppId(store, session.steamId, currentGame.appId);
+    await store.addGuessedGame(session.steamId, currentGame);
 
     if (run.health <= 0) {
       run.status = "game-over";
@@ -145,6 +145,54 @@ export function createStandardModeRunner({ config, catalog, store, random = Math
     return presentRun(session, session.standardModeRun, { config, store });
   }
 
+  async function listGuessedGames(session, { page } = {}) {
+    assertSession(session);
+    const history = await store.listGuessedGames(session.steamId, {
+      page,
+      pageSize: config.history.guessedGamesPageSize,
+      excludedAppIds: getUnrevealedQueuedAppIds(session.standardModeRun)
+    });
+    return hydrateGuessedGames(session, history);
+  }
+
+  async function clearHistory(session) {
+    assertSession(session);
+    await store.clearPlayerHistory(session.steamId);
+    return listGuessedGames(session, { page: 1 });
+  }
+
+  async function hydrateGuessedGames(session, history) {
+    const staleGames = history.items.filter(needsHistoryMetadata);
+    if (staleGames.length === 0 || typeof catalog.loadHistoryGame !== "function") {
+      return history;
+    }
+
+    const hydratedGames = [];
+    for (const game of staleGames) {
+      try {
+        const hydratedGame = await catalog.loadHistoryGame(game.appId);
+        if (hydratedGame) {
+          hydratedGames.push(hydratedGame);
+        }
+      } catch (error) {
+        if (!(error instanceof SteamCandidateError)) {
+          throw error;
+        }
+      }
+    }
+
+    if (hydratedGames.length === 0) {
+      return history;
+    }
+
+    await store.updateGuessedGameMetadata(session.steamId, hydratedGames);
+    const hydratedByAppId = new Map(hydratedGames.map((game) => [game.appId, presentGame(game)]));
+    return {
+      ...history,
+      items: history.items.map((game) => hydratedByAppId.get(game.appId) ?? game)
+    };
+  }
+
   async function ensureRun(session) {
     if (!session.standardModeRun) {
       session.standardModeRun = createRun(config);
@@ -188,7 +236,9 @@ export function createStandardModeRunner({ config, catalog, store, random = Math
     guess,
     next,
     skipShortVideo,
-    restart
+    restart,
+    listGuessedGames,
+    clearHistory
   };
 }
 
@@ -232,13 +282,6 @@ export function selectLeastCoveredBucketId(queue, buckets, random = Math.random)
   return bucketIds[Math.floor(random() * bucketIds.length)];
 }
 
-async function addGuessedAppId(store, steamId, appId) {
-  await store.updatePlayerRecord(steamId, (record) => ({
-    ...record,
-    guessedAppIds: [...record.guessedAppIds, appId]
-  }));
-}
-
 async function completeRun(store, steamId, run) {
   let highlights = {
     highScore: false,
@@ -260,6 +303,21 @@ async function completeRun(store, steamId, run) {
   });
 
   return highlights;
+}
+
+function getUnrevealedQueuedAppIds(run) {
+  if (!run?.queue) {
+    return [];
+  }
+
+  const revealedAppId = run.revealed?.game?.appId ?? null;
+  return run.queue
+    .map((game) => game.appId)
+    .filter((appId) => appId !== revealedAppId);
+}
+
+function needsHistoryMetadata(game) {
+  return !game.coverUrl || game.name === `Steam App ${game.appId}`;
 }
 
 async function presentRun(session, run, { config, store }) {

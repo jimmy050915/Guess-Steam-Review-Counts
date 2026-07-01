@@ -41,8 +41,40 @@
             <div class="menu-options">
               <h1 class="menu-title" id="menuTitle" tabindex="-1"></h1>
               <div class="mode-list" id="modeList"></div>
+              <div class="menu-navigation" id="menuNavigation"></div>
             </div>
             <aside class="mode-description" id="modeDescription" aria-hidden="true"></aside>
+          </div>
+        </section>
+
+        <section class="history-screen" id="guessedGamesScreen" aria-labelledby="guessedGamesTitle" hidden>
+          <div class="history-stage">
+            <header class="history-header">
+              <h1 class="history-title" id="guessedGamesTitle" tabindex="-1"></h1>
+              <p class="history-total" id="guessedGamesTotal"></p>
+            </header>
+
+            <section class="history-content" aria-live="polite">
+              <div class="history-loading-panel" id="guessedGamesLoadingPanel" hidden>
+                <div class="history-loading-progress" id="guessedGamesLoadingProgress" role="progressbar" aria-labelledby="guessedGamesLoading">
+                  <span></span>
+                </div>
+                <p class="history-loading" id="guessedGamesLoading"></p>
+              </div>
+              <p class="history-empty" id="guessedGamesEmpty" hidden></p>
+              <div class="history-list" id="guessedGamesList"></div>
+              <nav class="history-pagination" id="guessedGamesPagination" aria-label="">
+                <button class="history-page-button" id="guessedGamesPreviousButton" type="button"></button>
+                <span class="history-page-status" id="guessedGamesPageStatus"></span>
+                <button class="history-page-button" id="guessedGamesNextButton" type="button"></button>
+              </nav>
+            </section>
+
+            <footer class="history-actions">
+              <button class="return-menu-button" id="guessedGamesReturnMenuButton" type="button"></button>
+              <button class="history-clear-button" id="guessedGamesClearButton" type="button"></button>
+              <p class="history-status" id="guessedGamesStatus" aria-live="polite"></p>
+            </footer>
           </div>
         </section>
 
@@ -123,6 +155,17 @@
           </div>
         </section>
       </main>
+
+      <dialog class="history-dialog" id="guessedGamesClearDialog" aria-labelledby="guessedGamesClearDialogHeading">
+        <div class="history-dialog-layout">
+          <h2 id="guessedGamesClearDialogHeading"></h2>
+          <p id="guessedGamesClearDialogBody"></p>
+          <div class="history-dialog-actions">
+            <button class="history-dialog-cancel" id="guessedGamesClearCancelButton" type="button"></button>
+            <button class="history-dialog-confirm" id="guessedGamesClearConfirmButton" type="button"></button>
+          </div>
+        </div>
+      </dialog>
     </div>
 
     <script type="module" src="/src/client/main.js"></script>

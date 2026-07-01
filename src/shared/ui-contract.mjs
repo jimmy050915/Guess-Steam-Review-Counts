@@ -108,6 +108,15 @@ export function validateLandingPageConfig(config, localeBundles) {
     errors.push("standard-game screen route path must be /game/standard");
   }
 
+  const guessedGamesScreen = config.layout?.screens?.find((screen) => screen.id === "guessed-games");
+  if (guessedGamesScreen?.role !== "history") {
+    errors.push("guessed-games screen must declare history role");
+  }
+
+  if (guessedGamesScreen?.routePath !== "/history/guessed") {
+    errors.push("guessed-games screen route path must be /history/guessed");
+  }
+
   if (config.standardGame?.modeId !== "standard-mode") {
     errors.push("standard game modeId must be standard-mode");
   }
@@ -199,6 +208,11 @@ export function validateLandingPageConfig(config, localeBundles) {
     errors.push("main menu must declare at least one mode");
   }
 
+  const guessedGamesNavigation = config.mainMenu?.navigation?.find((item) => item.id === "guessed-games");
+  if (guessedGamesNavigation?.path !== "/history/guessed") {
+    errors.push("main menu must declare guessed-games navigation path");
+  }
+
   const standardMode = config.mainMenu?.modes?.find((mode) => mode.id === "standard-mode");
   if (!standardMode) {
     errors.push("main menu must declare standard-mode");
@@ -237,6 +251,26 @@ export function validateLandingPageConfig(config, localeBundles) {
     if (!records.some((record) => record.id === "high-score") || !records.some((record) => record.id === "best-combo")) {
       errors.push("standard-mode description must declare high score and best combo records");
     }
+  }
+
+  if (config.guessedGames?.id !== "guessed-games") {
+    errors.push("guessed games page id must be guessed-games");
+  }
+
+  if (config.guessedGames?.api?.listPath !== "/api/standard/guessed-games") {
+    errors.push("guessed games list api path must be /api/standard/guessed-games");
+  }
+
+  if (config.guessedGames?.api?.clearPath !== "/api/standard/guessed-games/clear") {
+    errors.push("guessed games clear api path must be /api/standard/guessed-games/clear");
+  }
+
+  if (config.guessedGames?.layout?.kind !== "paged-history-list") {
+    errors.push("guessed games layout kind must be paged-history-list");
+  }
+
+  if (config.guessedGames?.layout?.allowsCards !== false) {
+    errors.push("guessed games layout must explicitly disallow card layouts");
   }
 
   if (!Array.isArray(config.supportedLocales) || config.supportedLocales.length < 2) {

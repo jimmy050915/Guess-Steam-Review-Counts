@@ -187,6 +187,8 @@ a {
 .login-band,
 .menu-screen,
 .menu-stage,
+.history-screen,
+.history-stage,
 .game-screen,
 .game-stage {
   min-height: calc(100vh - 64px);
@@ -267,10 +269,15 @@ h1 {
 .language-switch button:focus-visible,
 .logout-button:focus-visible,
 .mode-button:focus-visible,
+.menu-link-button:focus-visible,
 .guess-submit:focus-visible,
 .restart-button:focus-visible,
 .return-menu-button:focus-visible,
-.guess-input:focus-visible {
+.guess-input:focus-visible,
+.history-page-button:focus-visible,
+.history-clear-button:focus-visible,
+.history-dialog-cancel:focus-visible,
+.history-dialog-confirm:focus-visible {
   outline: 2px solid var(--amber);
   outline-offset: 3px;
 }
@@ -336,7 +343,13 @@ h1 {
   gap: 14px;
 }
 
-.mode-button {
+.menu-navigation {
+  display: grid;
+  gap: 12px;
+}
+
+.mode-button,
+.menu-link-button {
   width: 100%;
   min-height: 58px;
   border: 1px solid rgba(102, 192, 244, 0.3);
@@ -358,7 +371,9 @@ h1 {
 
 .mode-button:hover,
 .mode-button:focus-visible,
-.mode-button[aria-expanded="true"] {
+.mode-button[aria-expanded="true"],
+.menu-link-button:hover,
+.menu-link-button:focus-visible {
   border-color: rgba(155, 217, 58, 0.82);
   color: #efffda;
   background: rgba(74, 111, 24, 0.34);
@@ -368,7 +383,8 @@ h1 {
   animation: subtle-button-float 1700ms ease-in-out infinite;
 }
 
-.mode-button:active {
+.mode-button:active,
+.menu-link-button:active {
   transform: translateY(2px);
 }
 
@@ -461,6 +477,236 @@ h1 {
 
 .mode-record-label {
   color: #d9e8f5;
+}
+
+.history-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 34px clamp(22px, 4vw, 58px) 34px;
+  background: var(--page-bg);
+}
+
+.history-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--line-soft);
+  padding-bottom: 22px;
+}
+
+.history-title {
+  max-width: none;
+  font-size: 3.2rem;
+  line-height: 1;
+}
+
+.history-title:focus {
+  outline: 0;
+}
+
+.history-total,
+.history-loading,
+.history-empty,
+.history-page-status,
+.history-status,
+.history-dialog p {
+  margin: 0;
+  color: #c7d5e0;
+  font-size: 0.94rem;
+  line-height: 1.55;
+  letter-spacing: 0;
+}
+
+.history-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 18px;
+}
+
+.history-loading-panel {
+  display: grid;
+  gap: 9px;
+  min-height: 34px;
+}
+
+.history-loading-progress {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(102, 192, 244, 0.14);
+}
+
+.history-loading-progress span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 38%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--steam-blue), var(--steam-green-bright));
+  animation: loading-progress-slide 1100ms ease-in-out infinite;
+}
+
+.history-list {
+  min-height: 220px;
+  display: grid;
+  align-content: start;
+  gap: 1px;
+  overflow-y: auto;
+  border-block: 1px solid var(--line-soft);
+}
+
+.history-game-link {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 138px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  min-height: 82px;
+  padding: 10px 0;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.history-game-link + .history-game-link {
+  border-top: 1px solid rgba(102, 192, 244, 0.11);
+}
+
+.history-game-link:hover .history-game-name {
+  color: #9bdcff;
+  text-decoration: underline;
+}
+
+.history-game-thumb,
+.history-game-thumb-placeholder {
+  width: 138px;
+  aspect-ratio: 460 / 215;
+  display: block;
+  border: 1px solid rgba(102, 192, 244, 0.24);
+  border-radius: 6px;
+  object-fit: cover;
+  background: #101820;
+}
+
+.history-game-thumb-placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.history-game-name {
+  min-width: 0;
+  color: var(--steam-blue);
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.history-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.history-page-button,
+.history-clear-button,
+.history-dialog-cancel,
+.history-dialog-confirm {
+  min-height: 42px;
+  border: 1px solid rgba(143, 165, 184, 0.36);
+  border-radius: 8px;
+  padding: 0 16px;
+  color: var(--ink);
+  background: rgba(16, 24, 32, 0.58);
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 850;
+  letter-spacing: 0;
+  transition:
+    border-color 150ms ease,
+    color 150ms ease,
+    filter 150ms ease,
+    transform 150ms ease;
+}
+
+.history-page-button:hover,
+.history-dialog-cancel:hover {
+  border-color: rgba(102, 192, 244, 0.72);
+}
+
+.history-page-button:disabled,
+.history-clear-button:disabled,
+.history-dialog-confirm:disabled {
+  cursor: wait;
+  filter: saturate(0.7);
+}
+
+.history-page-button:active,
+.history-clear-button:active,
+.history-dialog-cancel:active,
+.history-dialog-confirm:active {
+  transform: translateY(2px);
+}
+
+.history-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 220px) minmax(0, 220px) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 18px;
+}
+
+.history-clear-button,
+.history-dialog-confirm {
+  border-color: rgba(217, 164, 65, 0.76);
+  color: #180f05;
+  background: linear-gradient(180deg, #f0c568, var(--amber));
+}
+
+.history-status {
+  min-height: 1.45em;
+  color: var(--amber);
+}
+
+.history-dialog {
+  width: min(480px, calc(100vw - 36px));
+  border: 1px solid rgba(102, 192, 244, 0.32);
+  border-radius: 8px;
+  padding: 0;
+  color: var(--ink);
+  background: #101820;
+}
+
+.history-dialog::backdrop {
+  background: rgba(7, 13, 19, 0.72);
+}
+
+.history-dialog-layout {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+}
+
+.history-dialog h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.2rem;
+  line-height: 1.25;
+}
+
+.history-dialog-actions {
+  display: flex;
+  justify-content: end;
+  gap: 10px;
 }
 
 .game-stage {
@@ -845,6 +1091,8 @@ h1 {
   .login-band,
   .menu-screen,
   .menu-stage,
+  .history-screen,
+  .history-stage,
   .game-screen,
   .game-stage {
     min-height: calc(100vh - 58px);
@@ -912,6 +1160,51 @@ h1 {
   .mode-description-records {
     gap: 14px;
     padding-top: 20px;
+  }
+
+  .history-stage {
+    gap: 22px;
+    padding: 46px 20px 28px;
+  }
+
+  .history-header {
+    display: grid;
+    gap: 12px;
+    align-items: start;
+  }
+
+  .history-title {
+    font-size: 2.4rem;
+  }
+
+  .history-game-link {
+    grid-template-columns: 104px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .history-game-thumb,
+  .history-game-thumb-placeholder {
+    width: 104px;
+  }
+
+  .history-pagination {
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+    gap: 10px;
+  }
+
+  .history-page-status {
+    text-align: center;
+  }
+
+  .history-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .history-dialog-actions {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .game-stage {

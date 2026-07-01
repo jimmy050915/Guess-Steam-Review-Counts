@@ -6,6 +6,13 @@ const appState = {
   activeModeId: null,
   screenId: config.appState.initialScreenId,
   signingIn: false,
+  guessedGames: {
+    loading: false,
+    clearing: false,
+    page: 1,
+    data: null,
+    statusKey: null
+  },
   standardMode: {
     loading: false,
     state: null
@@ -26,6 +33,26 @@ const elements = {
   accountSteamId: document.querySelector("#accountSteamId"),
   accountSummary: document.querySelector("#accountSummary"),
   brandName: document.querySelector("#brandName"),
+  guessedGamesClearButton: document.querySelector("#guessedGamesClearButton"),
+  guessedGamesClearCancelButton: document.querySelector("#guessedGamesClearCancelButton"),
+  guessedGamesClearConfirmButton: document.querySelector("#guessedGamesClearConfirmButton"),
+  guessedGamesClearDialog: document.querySelector("#guessedGamesClearDialog"),
+  guessedGamesClearDialogBody: document.querySelector("#guessedGamesClearDialogBody"),
+  guessedGamesClearDialogHeading: document.querySelector("#guessedGamesClearDialogHeading"),
+  guessedGamesEmpty: document.querySelector("#guessedGamesEmpty"),
+  guessedGamesList: document.querySelector("#guessedGamesList"),
+  guessedGamesLoading: document.querySelector("#guessedGamesLoading"),
+  guessedGamesLoadingPanel: document.querySelector("#guessedGamesLoadingPanel"),
+  guessedGamesLoadingProgress: document.querySelector("#guessedGamesLoadingProgress"),
+  guessedGamesNextButton: document.querySelector("#guessedGamesNextButton"),
+  guessedGamesPageStatus: document.querySelector("#guessedGamesPageStatus"),
+  guessedGamesPagination: document.querySelector("#guessedGamesPagination"),
+  guessedGamesPreviousButton: document.querySelector("#guessedGamesPreviousButton"),
+  guessedGamesReturnMenuButton: document.querySelector("#guessedGamesReturnMenuButton"),
+  guessedGamesScreen: document.querySelector("#guessedGamesScreen"),
+  guessedGamesStatus: document.querySelector("#guessedGamesStatus"),
+  guessedGamesTitle: document.querySelector("#guessedGamesTitle"),
+  guessedGamesTotal: document.querySelector("#guessedGamesTotal"),
   introText: document.querySelector("#introText"),
   languageSwitch: document.querySelector("#languageSwitch"),
   loginButton: document.querySelector("#loginButton"),
@@ -36,6 +63,7 @@ const elements = {
   logoutButtonText: document.querySelector("#logoutButtonText"),
   mainMenuScreen: document.querySelector("#mainMenuScreen"),
   menuDescription: document.querySelector("#modeDescription"),
+  menuNavigation: document.querySelector("#menuNavigation"),
   menuStage: document.querySelector("#menuStage"),
   menuTitle: document.querySelector("#menuTitle"),
   modeList: document.querySelector("#modeList"),
@@ -90,6 +118,7 @@ const initialLocale = normalizeLocale(urlLocale ?? storedLocale ?? config.defaul
 
 renderLanguageButtons();
 renderModeButtons();
+renderNavigationButtons();
 await applyLocale(initialLocale);
 await syncSession();
 applyAuthResultStatus();
@@ -123,6 +152,30 @@ elements.standardReturnMenuButton.addEventListener("click", () => {
   window.location.assign("/");
 });
 
+elements.guessedGamesReturnMenuButton.addEventListener("click", () => {
+  window.location.assign("/");
+});
+
+elements.guessedGamesPreviousButton.addEventListener("click", () => {
+  void loadGuessedGames(appState.guessedGames.page - 1);
+});
+
+elements.guessedGamesNextButton.addEventListener("click", () => {
+  void loadGuessedGames(appState.guessedGames.page + 1);
+});
+
+elements.guessedGamesClearButton.addEventListener("click", () => {
+  openGuessedGamesClearDialog();
+});
+
+elements.guessedGamesClearCancelButton.addEventListener("click", () => {
+  closeGuessedGamesClearDialog();
+});
+
+elements.guessedGamesClearConfirmButton.addEventListener("click", () => {
+  void clearGuessedGamesHistory();
+});
+
 function preventFocusedNumberWheel(event) {
   if (document.activeElement === elements.standardGuessInput) {
     event.preventDefault();
@@ -143,6 +196,7 @@ async function applyLocale(locale) {
   const loginScreen = getScreenConfig(config.appState.initialScreenId);
   const menuScreen = getScreenConfig(config.appState.authenticatedScreenId);
   const standardGameScreen = getScreenConfig("standard-game");
+  const guessedGamesScreen = getScreenConfig("guessed-games");
 
   document.documentElement.lang = nextLocale;
   document.title = getLocalizedText(bundle, "page.title");
@@ -154,6 +208,13 @@ async function applyLocale(locale) {
   elements.logoutButtonText.textContent = getLocalizedText(bundle, "account.logout.button");
   elements.menuTitle.textContent = getLocalizedText(bundle, menuScreen.headingKey);
   elements.standardGameTitle.textContent = getLocalizedText(bundle, standardGameScreen.headingKey);
+  elements.guessedGamesTitle.textContent = getLocalizedText(bundle, guessedGamesScreen.headingKey);
+  elements.guessedGamesReturnMenuButton.textContent = getLocalizedText(bundle, config.guessedGames.labels.returnMenuButtonKey);
+  elements.guessedGamesClearButton.textContent = getLocalizedText(bundle, config.guessedGames.labels.clearButtonKey);
+  elements.guessedGamesClearDialogHeading.textContent = getLocalizedText(bundle, config.guessedGames.labels.clearDialogHeadingKey);
+  elements.guessedGamesClearDialogBody.textContent = getLocalizedText(bundle, config.guessedGames.labels.clearDialogBodyKey);
+  elements.guessedGamesClearCancelButton.textContent = getLocalizedText(bundle, config.guessedGames.labels.clearDialogCancelKey);
+  elements.guessedGamesClearConfirmButton.textContent = getLocalizedText(bundle, config.guessedGames.labels.clearDialogConfirmKey);
   elements.standardGuessLabel.textContent = getLocalizedText(bundle, config.standardGame.labels.guessLabelKey);
   elements.standardGuessHint.textContent = getLocalizedText(bundle, config.standardGame.labels.guessHintKey);
   elements.standardHealthLabel.textContent = getLocalizedText(bundle, config.standardGame.labels.healthLabelKey);
@@ -166,6 +227,9 @@ async function applyLocale(locale) {
   elements.standardRestartButton.textContent = getLocalizedText(bundle, config.standardGame.labels.restartButtonKey);
   elements.standardReturnMenuButton.textContent = getLocalizedText(bundle, config.standardGame.labels.returnMenuButtonKey);
   elements.modeList.setAttribute("aria-label", getLocalizedText(bundle, menuScreen.ariaLabelKey));
+  elements.guessedGamesPagination.setAttribute("aria-label", getLocalizedText(bundle, config.guessedGames.labels.pageStatusKey)
+    .replace("{page}", "1")
+    .replace("{totalPages}", "1"));
   elements.languageSwitch.setAttribute("aria-label", getLocalizedText(bundle, config.languageToggle.labelKey));
   elements.standardGuessInput.min = String(config.standardGame.input.min);
 
@@ -176,10 +240,12 @@ async function applyLocale(locale) {
   }
 
   updateModeButtonLabels(bundle);
+  updateNavigationButtonLabels(bundle);
   if (appState.activeModeId) {
     renderModeDescription(getModeConfig(appState.activeModeId), bundle);
   }
   renderStandardGame();
+  renderGuessedGames();
 
   if (!appState.signingIn) {
     elements.loginStatus.textContent = "";
@@ -242,6 +308,27 @@ function renderModeButtons() {
     label.className = "mode-button-text";
     button.append(label);
     elements.modeList.append(button);
+  }
+}
+
+function renderNavigationButtons() {
+  elements.menuNavigation.replaceChildren();
+
+  for (const item of config.mainMenu.navigation ?? []) {
+    const button = document.createElement("button");
+    const label = document.createElement("span");
+
+    button.type = "button";
+    button.className = "menu-link-button";
+    button.dataset.navigationId = item.id;
+    button.dataset.labelKey = item.labelKey;
+    button.addEventListener("click", () => {
+      window.location.assign(item.path);
+    });
+
+    label.className = "mode-button-text";
+    button.append(label);
+    elements.menuNavigation.append(button);
   }
 }
 
@@ -329,12 +416,14 @@ function applyScreenState(nextScreenId) {
   const isLoginScreen = nextScreenId === config.appState.initialScreenId;
   const isMainMenuScreen = nextScreenId === config.appState.authenticatedScreenId;
   const isStandardGameScreen = nextScreenId === "standard-game";
+  const isGuessedGamesScreen = nextScreenId === "guessed-games";
 
   appState.screenId = nextScreenId;
   document.body.dataset.screen = appState.screenId;
 
   elements.loginScreen.hidden = !isLoginScreen;
   elements.mainMenuScreen.hidden = !isMainMenuScreen;
+  elements.guessedGamesScreen.hidden = !isGuessedGamesScreen;
   elements.standardGameScreen.hidden = !isStandardGameScreen;
 
   if (!isMainMenuScreen) {
@@ -348,6 +437,11 @@ function applyScreenState(nextScreenId) {
     elements.loginStatus.textContent = "";
     elements.standardGameTitle.focus({ preventScroll: true });
     void loadStandardState();
+  } else if (isGuessedGamesScreen) {
+    elements.loginStatus.textContent = "";
+    elements.guessedGamesTitle.focus({ preventScroll: true });
+    detachStandardVideo();
+    void loadGuessedGames(1);
   } else {
     detachStandardVideo();
   }
@@ -531,6 +625,74 @@ async function restartStandardGame() {
   }
 }
 
+async function loadGuessedGames(page = appState.guessedGames.page) {
+  if (!appState.user || appState.guessedGames.loading) {
+    return;
+  }
+
+  const nextPage = Math.max(1, Number.parseInt(page, 10) || 1);
+  const path = `${config.guessedGames.api.listPath}?page=${encodeURIComponent(nextPage)}`;
+  appState.guessedGames.loading = true;
+  appState.guessedGames.statusKey = null;
+  renderGuessedGames();
+
+  try {
+    appState.guessedGames.data = await requestStandardApi(path, {
+      method: "GET"
+    });
+    appState.guessedGames.page = appState.guessedGames.data.page;
+  } catch {
+    appState.guessedGames.statusKey = config.guessedGames.labels.errorKey;
+  } finally {
+    appState.guessedGames.loading = false;
+    renderGuessedGames();
+  }
+}
+
+async function clearGuessedGamesHistory() {
+  if (appState.guessedGames.loading || appState.guessedGames.clearing) {
+    return;
+  }
+
+  appState.guessedGames.clearing = true;
+  appState.guessedGames.statusKey = null;
+  renderGuessedGames();
+
+  try {
+    appState.guessedGames.data = await requestStandardApi(config.guessedGames.api.clearPath, {
+      method: "POST"
+    });
+    appState.guessedGames.page = appState.guessedGames.data.page;
+    appState.guessedGames.statusKey = config.guessedGames.labels.clearSuccessKey;
+    closeGuessedGamesClearDialog();
+  } catch {
+    appState.guessedGames.statusKey = config.guessedGames.labels.errorKey;
+    closeGuessedGamesClearDialog();
+  } finally {
+    appState.guessedGames.clearing = false;
+    renderGuessedGames();
+  }
+}
+
+function openGuessedGamesClearDialog() {
+  appState.guessedGames.statusKey = null;
+  renderGuessedGames();
+
+  if (typeof elements.guessedGamesClearDialog.showModal === "function") {
+    elements.guessedGamesClearDialog.showModal();
+  } else {
+    elements.guessedGamesClearDialog.setAttribute("open", "");
+  }
+}
+
+function closeGuessedGamesClearDialog() {
+  if (typeof elements.guessedGamesClearDialog.close === "function") {
+    elements.guessedGamesClearDialog.close();
+  } else {
+    elements.guessedGamesClearDialog.removeAttribute("open");
+  }
+}
+
 async function requestStandardApi(path, { method, body } = {}) {
   const response = await fetch(path, {
     method,
@@ -604,6 +766,95 @@ function renderStandardGame() {
 
   renderRevealedGame(state, bundle);
   renderStandardResult(state, bundle);
+}
+
+function renderGuessedGames() {
+  const bundle = localeCache.get(currentLocale());
+  if (!bundle) {
+    return;
+  }
+
+  const history = appState.guessedGames;
+  const data = history.data;
+  const items = data?.items ?? [];
+  const isBusy = history.loading || history.clearing;
+  const loadingText = history.loading
+    ? getLocalizedText(bundle, config.guessedGames.labels.loadingKey)
+    : "";
+
+  elements.guessedGamesLoadingPanel.hidden = !history.loading;
+  elements.guessedGamesLoading.textContent = loadingText;
+  elements.guessedGamesClearButton.disabled = isBusy || !data;
+  elements.guessedGamesClearConfirmButton.disabled = history.clearing;
+  elements.guessedGamesStatus.textContent = history.statusKey
+    ? getLocalizedText(bundle, history.statusKey)
+    : "";
+
+  if (history.loading) {
+    elements.guessedGamesLoadingProgress.setAttribute("aria-valuetext", loadingText);
+  } else {
+    elements.guessedGamesLoadingProgress.removeAttribute("aria-valuetext");
+  }
+
+  elements.guessedGamesList.replaceChildren();
+  for (const game of items) {
+    elements.guessedGamesList.append(renderGuessedGameItem(game));
+  }
+
+  const hasLoadedData = Boolean(data);
+  const isEmpty = hasLoadedData && items.length === 0 && !history.loading;
+  elements.guessedGamesEmpty.hidden = !isEmpty;
+  elements.guessedGamesEmpty.textContent = getLocalizedText(bundle, config.guessedGames.labels.emptyKey);
+
+  const totalItems = data?.totalItems ?? 0;
+  const page = data?.page ?? 1;
+  const totalPages = data?.totalPages ?? 1;
+  elements.guessedGamesTotal.textContent = hasLoadedData
+    ? formatLocalizedTemplate(
+      getLocalizedText(bundle, config.guessedGames.labels.totalKey),
+      { total: formatNumber(totalItems) }
+    )
+    : "";
+  elements.guessedGamesPageStatus.textContent = formatLocalizedTemplate(
+    getLocalizedText(bundle, config.guessedGames.labels.pageStatusKey),
+    {
+      page: formatNumber(page),
+      totalPages: formatNumber(totalPages)
+    }
+  );
+  elements.guessedGamesPreviousButton.textContent = getLocalizedText(bundle, config.guessedGames.labels.previousButtonKey);
+  elements.guessedGamesNextButton.textContent = getLocalizedText(bundle, config.guessedGames.labels.nextButtonKey);
+  elements.guessedGamesPreviousButton.disabled = isBusy || !hasLoadedData || page <= 1;
+  elements.guessedGamesNextButton.disabled = isBusy || !hasLoadedData || page >= totalPages;
+}
+
+function renderGuessedGameItem(game) {
+  const link = document.createElement("a");
+  const name = document.createElement("span");
+
+  link.className = "history-game-link";
+  link.href = game.steamUrl;
+  link.target = "_blank";
+  link.rel = "noreferrer noopener";
+
+  if (game.coverUrl) {
+    const thumb = document.createElement("img");
+    thumb.className = "history-game-thumb";
+    thumb.src = game.coverUrl;
+    thumb.alt = "";
+    link.append(thumb);
+  } else {
+    const placeholder = document.createElement("span");
+    placeholder.className = "history-game-thumb-placeholder";
+    placeholder.textContent = String(game.appId);
+    link.append(placeholder);
+  }
+
+  name.className = "history-game-name";
+  name.textContent = game.name;
+  link.append(name);
+
+  return link;
 }
 
 function renderRevealedGame(state, bundle) {
@@ -889,6 +1140,13 @@ function formatPercent(value) {
   }).format(value ?? 0)}%`;
 }
 
+function formatLocalizedTemplate(template, values) {
+  return Object.entries(values).reduce(
+    (text, [key, value]) => text.replaceAll(`{${key}}`, value),
+    template
+  );
+}
+
 function updateModeButtonLabels(bundle) {
   if (!bundle) {
     return;
@@ -900,6 +1158,16 @@ function updateModeButtonLabels(bundle) {
       ? mode.activeLabelKey
       : mode.labelKey;
     button.querySelector(".mode-button-text").textContent = getLocalizedText(bundle, labelKey);
+  }
+}
+
+function updateNavigationButtonLabels(bundle) {
+  if (!bundle) {
+    return;
+  }
+
+  for (const button of elements.menuNavigation.querySelectorAll("button")) {
+    button.querySelector(".mode-button-text").textContent = getLocalizedText(bundle, button.dataset.labelKey);
   }
 }
 

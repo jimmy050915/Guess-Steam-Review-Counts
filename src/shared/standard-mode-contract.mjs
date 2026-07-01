@@ -121,6 +121,10 @@ export function validateStandardModeConfig(config) {
     errors.push("standard mode candidate pool maxEntriesPerBucket must be at least 10");
   }
 
+  if (config.history?.guessedGamesPageSize !== 100) {
+    errors.push("standard mode guessed games page size must be 100");
+  }
+
   if (config.video?.trimStartSeconds !== 10 || config.video?.trimEndSeconds !== 10) {
     errors.push("standard mode video trim must remove 10 seconds from both ends");
   }

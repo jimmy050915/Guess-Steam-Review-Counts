@@ -48,6 +48,12 @@
         "role": "gameplay",
         "routePath": "/game/standard",
         "headingKey": "game.standard.heading"
+      },
+      {
+        "id": "guessed-games",
+        "role": "history",
+        "routePath": "/history/guessed",
+        "headingKey": "history.guessed.heading"
       }
     ],
     "mainMenu": {
@@ -86,6 +92,13 @@
   },
   "mainMenu": {
     "id": "main-menu",
+    "navigation": [
+      {
+        "id": "guessed-games",
+        "labelKey": "mainMenu.guessedGames.button",
+        "path": "/history/guessed"
+      }
+    ],
     "modes": [
       {
         "id": "standard-mode",
@@ -125,6 +138,33 @@
         }
       }
     ]
+  },
+  "guessedGames": {
+    "id": "guessed-games",
+    "api": {
+      "listPath": "/api/standard/guessed-games",
+      "clearPath": "/api/standard/guessed-games/clear"
+    },
+    "layout": {
+      "kind": "paged-history-list",
+      "allowsCards": false
+    },
+    "labels": {
+      "loadingKey": "history.guessed.loading",
+      "emptyKey": "history.guessed.empty",
+      "totalKey": "history.guessed.total",
+      "pageStatusKey": "history.guessed.pageStatus",
+      "previousButtonKey": "history.guessed.previous",
+      "nextButtonKey": "history.guessed.next",
+      "returnMenuButtonKey": "history.guessed.returnMenu",
+      "clearButtonKey": "history.guessed.clear",
+      "clearDialogHeadingKey": "history.guessed.clearDialog.heading",
+      "clearDialogBodyKey": "history.guessed.clearDialog.body",
+      "clearDialogCancelKey": "history.guessed.clearDialog.cancel",
+      "clearDialogConfirmKey": "history.guessed.clearDialog.confirm",
+      "clearSuccessKey": "history.guessed.clearSuccess",
+      "errorKey": "history.guessed.error"
+    }
   },
   "standardGame": {
     "id": "standard-game",
