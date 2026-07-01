@@ -4,7 +4,11 @@
   "landing.heading": "猜猜游戏评测量",
   "landing.intro": "观赏 Steam 上任意一款游戏的宣传片，用你的直觉猜猜这款游戏的评测量。来试试吧！",
   "landing.login.button": "登录 Steam 账户",
-  "landing.login.pending": "登录流程将在 Steam 账户接入阶段启用。",
+  "landing.login.pending": "正在登录...",
+  "landing.login.success": "登录成功",
+  "mainMenu.heading": "主菜单",
+  "mainMenu.ariaLabel": "主菜单模式选择",
+  "mainMenu.standardMode.button": "标准模式",
   "language.toggle": "语言",
   "language.zh": "中文",
   "language.en": "EN"

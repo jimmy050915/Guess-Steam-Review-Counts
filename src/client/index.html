@@ -13,15 +13,27 @@
         <nav class="language-switch" id="languageSwitch"></nav>
       </header>
 
-      <main class="intro-page" aria-labelledby="pageTitle">
-        <section class="intro-band">
-          <div class="intro-copy">
-            <h1 id="pageTitle"></h1>
-            <p class="intro-text" id="introText"></p>
-            <button class="login-button" id="loginButton" type="button">
-              <span id="loginButtonText"></span>
-            </button>
-            <p class="login-status" id="loginStatus" aria-live="polite"></p>
+      <main class="app-main">
+        <section class="login-screen" id="loginScreen" aria-labelledby="pageTitle">
+          <div class="login-band">
+            <div class="login-copy">
+              <h1 id="pageTitle"></h1>
+              <p class="intro-text" id="introText"></p>
+              <button class="login-button" id="loginButton" type="button">
+                <span id="loginButtonText"></span>
+              </button>
+              <p class="login-status" id="loginStatus" aria-live="polite"></p>
+            </div>
+          </div>
+        </section>
+
+        <section class="menu-screen" id="mainMenuScreen" aria-labelledby="menuTitle" hidden>
+          <div class="menu-stage" id="menuStage">
+            <div class="menu-options">
+              <h1 class="menu-title" id="menuTitle" tabindex="-1"></h1>
+              <div class="mode-list" id="modeList"></div>
+            </div>
+            <aside class="mode-description" id="modeDescription" aria-hidden="true"></aside>
           </div>
         </section>
       </main>

@@ -32,6 +32,7 @@ html {
 body {
   min-height: 100vh;
   margin: 0;
+  overflow-x: hidden;
   background: var(--page-bg);
   color: var(--ink);
   letter-spacing: 0;
@@ -40,6 +41,10 @@ body {
 button,
 a {
   font: inherit;
+}
+
+[hidden] {
+  display: none !important;
 }
 
 .page-shell {
@@ -105,14 +110,16 @@ a {
   background: var(--steam-blue);
 }
 
-.intro-page {
+.app-main,
+.login-screen,
+.login-band,
+.menu-screen,
+.menu-stage {
   min-height: calc(100vh - 64px);
-  background: var(--page-bg);
 }
 
-.intro-band {
+.login-band {
   position: relative;
-  min-height: calc(100vh - 64px);
   display: grid;
   align-items: center;
   overflow: hidden;
@@ -120,7 +127,7 @@ a {
   background: var(--page-bg);
 }
 
-.intro-copy {
+.login-copy {
   position: relative;
   z-index: 1;
   width: min(820px, 100%);
@@ -170,6 +177,11 @@ h1 {
   filter: brightness(1.06);
 }
 
+.login-button:disabled {
+  cursor: wait;
+  filter: saturate(0.8);
+}
+
 .login-button:active {
   transform: translateY(2px) scale(0.985);
   box-shadow:
@@ -178,7 +190,8 @@ h1 {
 }
 
 .login-button:focus-visible,
-.language-switch button:focus-visible {
+.language-switch button:focus-visible,
+.mode-button:focus-visible {
   outline: 2px solid var(--amber);
   outline-offset: 3px;
 }
@@ -189,6 +202,121 @@ h1 {
   color: var(--muted);
   font-size: 0.95rem;
   line-height: 1.5;
+}
+
+.menu-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 72px 8vw;
+  background:
+    linear-gradient(90deg, rgba(23, 26, 33, 0.26), transparent 42%),
+    var(--page-bg);
+}
+
+.menu-options {
+  position: relative;
+  z-index: 1;
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 28px;
+  transition: transform 220ms ease;
+}
+
+.menu-stage.is-describing .menu-options {
+  transform: translateX(-18vw);
+}
+
+.menu-title {
+  max-width: none;
+  font-size: 3.2rem;
+  line-height: 1;
+}
+
+.menu-title:focus {
+  outline: 0;
+}
+
+.mode-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mode-button {
+  width: 100%;
+  min-height: 58px;
+  border: 1px solid rgba(102, 192, 244, 0.3);
+  border-radius: 8px;
+  padding: 0 22px;
+  color: var(--ink);
+  background: rgba(16, 24, 32, 0.38);
+  cursor: pointer;
+  text-align: left;
+  font-size: 1.12rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.mode-button:hover,
+.mode-button:focus-visible,
+.mode-button[aria-expanded="true"] {
+  border-color: rgba(155, 217, 58, 0.82);
+  color: #efffda;
+  background: rgba(74, 111, 24, 0.34);
+}
+
+.mode-button:active {
+  transform: translateY(2px);
+}
+
+.mode-description {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: min(38vw, 520px);
+  height: 100%;
+  border-left: 1px solid var(--line-soft);
+  background:
+    linear-gradient(180deg, rgba(16, 24, 32, 0.58), rgba(16, 24, 32, 0.22)),
+    rgba(23, 26, 33, 0.28);
+  opacity: 0;
+  transform: translateX(100%);
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease;
+}
+
+.menu-stage.is-describing .mode-description {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+@media (max-width: 900px) {
+  .menu-stage {
+    place-items: start center;
+    padding: 56px 22px 0;
+  }
+
+  .menu-options {
+    width: min(420px, 100%);
+  }
+
+  .menu-stage.is-describing .menu-options {
+    transform: translateX(-8vw);
+  }
+
+  .mode-description {
+    width: 42vw;
+  }
 }
 
 @media (max-width: 760px) {
@@ -207,12 +335,15 @@ h1 {
     padding: 0 10px;
   }
 
-  .intro-page,
-  .intro-band {
+  .app-main,
+  .login-screen,
+  .login-band,
+  .menu-screen,
+  .menu-stage {
     min-height: calc(100vh - 58px);
   }
 
-  .intro-band {
+  .login-band {
     padding: 56px 20px 72px;
   }
 
@@ -228,5 +359,23 @@ h1 {
 
   .login-button {
     width: min(100%, 280px);
+  }
+
+  .menu-stage {
+    display: block;
+    padding: 46px 20px 0;
+  }
+
+  .menu-title {
+    font-size: 2.4rem;
+  }
+
+  .menu-stage.is-describing .menu-options {
+    transform: translateX(-18px);
+  }
+
+  .mode-description {
+    top: 0;
+    width: 34vw;
   }
 }

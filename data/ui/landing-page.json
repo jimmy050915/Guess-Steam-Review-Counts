@@ -1,30 +1,45 @@
 {
   "schemaVersion": 1,
-  "pageId": "intro-login",
+  "pageId": "login-main-menu",
   "defaultLocale": "zh-CN",
   "supportedLocales": ["zh-CN", "en-US"],
   "themeId": "steamdb-dark-v1",
   "brand": {
     "nameKey": "brand.name"
   },
+  "appState": {
+    "initialScreenId": "login",
+    "authenticatedScreenId": "main-menu",
+    "stateStorageName": "gsc.authState",
+    "authenticatedValue": "authenticated"
+  },
   "layout": {
-    "kind": "single-screen-intro-login",
+    "kind": "login-to-main-menu-flow",
     "density": "database",
     "allowsCards": false,
-    "sections": [
-      {
-        "id": "intro",
-        "role": "introduction",
-        "headingKey": "landing.heading",
-        "bodyKey": "landing.intro"
-      },
+    "screens": [
       {
         "id": "login",
         "role": "authentication-entry",
+        "headingKey": "landing.heading",
+        "bodyKey": "landing.intro",
         "buttonKey": "landing.login.button",
-        "pendingStatusKey": "landing.login.pending"
+        "pendingStatusKey": "landing.login.pending",
+        "successStatusKey": "landing.login.success"
+      },
+      {
+        "id": "main-menu",
+        "role": "mode-selection",
+        "headingKey": "mainMenu.heading",
+        "ariaLabelKey": "mainMenu.ariaLabel"
       }
-    ]
+    ],
+    "mainMenu": {
+      "kind": "horizontal-shift-with-right-description",
+      "modeListShift": "left-on-mode-click",
+      "descriptionReveal": "slide-from-right-after-click",
+      "descriptionContent": "empty-placeholder"
+    }
   },
   "languageToggle": {
     "labelKey": "language.toggle",
@@ -46,6 +61,21 @@
     "shape": "capsule",
     "colorToken": "steam-green",
     "pressAnimation": "subtle-press",
-    "actionKind": "auth-intent-placeholder"
+    "actionKind": "local-auth-success",
+    "successScreenId": "main-menu",
+    "successDelayMs": 120
+  },
+  "mainMenu": {
+    "id": "main-menu",
+    "modes": [
+      {
+        "id": "standard-mode",
+        "labelKey": "mainMenu.standardMode.button",
+        "description": {
+          "surfaceId": "standard-mode-description",
+          "emptyContent": true
+        }
+      }
+    ]
   }
 }

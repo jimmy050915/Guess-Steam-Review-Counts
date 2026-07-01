@@ -39,6 +39,7 @@ const requiredAgentPhrases = [
   "模拟层与视觉层分离",
   "面向未来扩展",
   "执行顺序",
+  "禁止卡片式布局",
   "npm run verify",
 ];
 

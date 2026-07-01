@@ -50,16 +50,42 @@ export function validateLandingPageConfig(config, localeBundles) {
     errors.push("landing page config schemaVersion must be 1");
   }
 
-  if (config.pageId !== "intro-login") {
-    errors.push("landing page pageId must be intro-login");
+  if (config.pageId !== "login-main-menu") {
+    errors.push("landing page pageId must be login-main-menu");
   }
 
-  if (config.layout?.kind !== "single-screen-intro-login") {
-    errors.push("landing page layout kind must be single-screen-intro-login");
+  if (config.layout?.kind !== "login-to-main-menu-flow") {
+    errors.push("landing page layout kind must be login-to-main-menu-flow");
   }
 
   if (config.layout?.allowsCards !== false) {
     errors.push("landing page layout must explicitly disallow card layouts");
+  }
+
+  const screenIds = new Set((config.layout?.screens ?? []).map((screen) => screen.id));
+
+  if (config.appState?.initialScreenId !== "login") {
+    errors.push("app state initial screen must be login");
+  }
+
+  if (config.appState?.authenticatedScreenId !== "main-menu") {
+    errors.push("app state authenticated screen must be main-menu");
+  }
+
+  if (!screenIds.has(config.appState?.initialScreenId)) {
+    errors.push("app state initial screen must exist in layout screens");
+  }
+
+  if (!screenIds.has(config.appState?.authenticatedScreenId)) {
+    errors.push("app state authenticated screen must exist in layout screens");
+  }
+
+  if (typeof config.appState?.stateStorageName !== "string" || config.appState.stateStorageName.length === 0) {
+    errors.push("app state must declare a storage name");
+  }
+
+  if (typeof config.appState?.authenticatedValue !== "string" || config.appState.authenticatedValue.length === 0) {
+    errors.push("app state must declare an authenticated value");
   }
 
   if (config.loginButton?.shape !== "capsule") {
@@ -72,6 +98,39 @@ export function validateLandingPageConfig(config, localeBundles) {
 
   if (config.loginButton?.pressAnimation !== "subtle-press") {
     errors.push("login button must use the subtle-press animation token");
+  }
+
+  if (config.loginButton?.actionKind !== "local-auth-success") {
+    errors.push("login button action must be local-auth-success");
+  }
+
+  if (config.loginButton?.successScreenId !== config.appState?.authenticatedScreenId) {
+    errors.push("login button success screen must match authenticated screen");
+  }
+
+  if (config.layout?.mainMenu?.kind !== "horizontal-shift-with-right-description") {
+    errors.push("main menu layout kind must be horizontal-shift-with-right-description");
+  }
+
+  if (config.layout?.mainMenu?.modeListShift !== "left-on-mode-click") {
+    errors.push("main menu must shift the mode list left on click");
+  }
+
+  if (config.layout?.mainMenu?.descriptionReveal !== "slide-from-right-after-click") {
+    errors.push("main menu description must slide from the right after click");
+  }
+
+  if (!Array.isArray(config.mainMenu?.modes) || config.mainMenu.modes.length === 0) {
+    errors.push("main menu must declare at least one mode");
+  }
+
+  const standardMode = config.mainMenu?.modes?.find((mode) => mode.id === "standard-mode");
+  if (!standardMode) {
+    errors.push("main menu must declare standard-mode");
+  } else {
+    if (standardMode.description?.emptyContent !== true) {
+      errors.push("standard-mode description must be an explicit empty placeholder");
+    }
   }
 
   if (!Array.isArray(config.supportedLocales) || config.supportedLocales.length < 2) {
