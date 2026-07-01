@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "pageId": "intro-login",
+  "defaultLocale": "zh-CN",
+  "supportedLocales": ["zh-CN", "en-US"],
+  "themeId": "steamdb-dark-v1",
+  "brand": {
+    "nameKey": "brand.name"
+  },
+  "layout": {
+    "kind": "single-screen-intro-login",
+    "density": "database",
+    "allowsCards": false,
+    "sections": [
+      {
+        "id": "intro",
+        "role": "introduction",
+        "headingKey": "landing.heading",
+        "bodyKey": "landing.intro"
+      },
+      {
+        "id": "login",
+        "role": "authentication-entry",
+        "buttonKey": "landing.login.button",
+        "pendingStatusKey": "landing.login.pending"
+      }
+    ]
+  },
+  "languageToggle": {
+    "labelKey": "language.toggle",
+    "options": [
+      {
+        "locale": "zh-CN",
+        "labelKey": "language.zh"
+      },
+      {
+        "locale": "en-US",
+        "labelKey": "language.en"
+      }
+    ]
+  },
+  "loginButton": {
+    "id": "steam-login",
+    "provider": "steam",
+    "labelKey": "landing.login.button",
+    "shape": "capsule",
+    "colorToken": "steam-green",
+    "pressAnimation": "subtle-press",
+    "actionKind": "auth-intent-placeholder"
+  }
+}

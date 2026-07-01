@@ -1,4 +1,5 @@
 import { access, readdir, readFile } from "node:fs/promises";
+import { spawn } from "node:child_process";
 import path from "node:path";
 import process from "node:process";
 
@@ -17,6 +18,16 @@ const requiredPaths = [
   "tests",
   "scripts",
   "docs",
+  "data/ui/landing-page.json",
+  "data/localization/zh-CN.json",
+  "data/localization/en-US.json",
+  "src/client/index.html",
+  "src/client/styles.css",
+  "src/client/main.js",
+  "src/shared/ui-contract.mjs",
+  "scripts/serve.mjs",
+  "tests/landing-page-contract.test.mjs",
+  "docs/landing-page-data.md",
   ".github/workflows/ci.yml",
 ];
 
@@ -35,10 +46,12 @@ async function assertPathExists(relativePath) {
   await access(path.join(root, relativePath));
 }
 
-async function assertDirectoryTracked(relativePath) {
-  const entries = await readdir(path.join(root, relativePath));
-  if (!entries.includes(".gitkeep")) {
-    throw new Error(`${relativePath} must contain .gitkeep until real files exist`);
+async function assertDirectoryReady(relativePath) {
+  const entries = await readdir(path.join(root, relativePath), { withFileTypes: true });
+  const hasPlaceholder = entries.some((entry) => entry.name === ".gitkeep");
+  const hasRealContent = entries.some((entry) => entry.name !== ".gitkeep");
+  if (!hasPlaceholder && !hasRealContent) {
+    throw new Error(`${relativePath} must contain .gitkeep or real files`);
   }
 }
 
@@ -46,7 +59,7 @@ async function main() {
   await Promise.all(requiredPaths.map(assertPathExists));
 
   for (const directory of ["data", "src/client", "src/server", "src/shared", "tests", "docs"]) {
-    await assertDirectoryTracked(directory);
+    await assertDirectoryReady(directory);
   }
 
   const agentsText = await readFile(path.join(root, "AGENTS.md"), "utf8");
@@ -56,7 +69,27 @@ async function main() {
     }
   }
 
+  await runNodeTests();
+
   console.log("verify: repository skeleton and policy checks passed");
+}
+
+async function runNodeTests() {
+  await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, ["--test", "tests/landing-page-contract.test.mjs"], {
+      cwd: root,
+      stdio: "inherit"
+    });
+
+    child.on("error", reject);
+    child.on("exit", (code) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`node --test tests exited with code ${code}`));
+      }
+    });
+  });
 }
 
 main().catch((error) => {

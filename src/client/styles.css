@@ -1,0 +1,232 @@
+:root {
+  color-scheme: dark;
+  --ink: #e4edf7;
+  --muted: #8fa5b8;
+  --page-bg: #1B2838;
+  --topbar-bg: #171a21;
+  --line: #26384a;
+  --line-soft: rgba(102, 192, 244, 0.13);
+  --steam-blue: #66c0f4;
+  --steam-green: #75b022;
+  --steam-green-bright: #9bd93a;
+  --steam-green-deep: #4f8316;
+  --amber: #d9a441;
+  font-family:
+    "Inter",
+    "Segoe UI",
+    "Microsoft YaHei UI",
+    "Microsoft YaHei",
+    system-ui,
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--page-bg);
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background: var(--page-bg);
+  color: var(--ink);
+  letter-spacing: 0;
+}
+
+button,
+a {
+  font: inherit;
+}
+
+.page-shell {
+  position: relative;
+  min-height: 100vh;
+  isolation: isolate;
+}
+
+.topbar {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 0 40px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(23, 26, 33, 0.94);
+  backdrop-filter: blur(8px);
+}
+
+.brand {
+  color: var(--ink);
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.language-switch {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid #30465a;
+  border-radius: 999px;
+  background: #101820;
+}
+
+.language-switch button {
+  min-width: 58px;
+  min-height: 34px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 14px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
+}
+
+.language-switch button:hover {
+  color: var(--ink);
+}
+
+.language-switch button:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.language-switch button[aria-pressed="true"] {
+  color: #0d1218;
+  background: var(--steam-blue);
+}
+
+.intro-page {
+  min-height: calc(100vh - 64px);
+  background: var(--page-bg);
+}
+
+.intro-band {
+  position: relative;
+  min-height: calc(100vh - 64px);
+  display: grid;
+  align-items: center;
+  overflow: hidden;
+  padding: 76px 10vw 96px;
+  background: var(--page-bg);
+}
+
+.intro-copy {
+  position: relative;
+  z-index: 1;
+  width: min(820px, 100%);
+}
+
+h1 {
+  max-width: 760px;
+  margin: 0;
+  color: var(--ink);
+  font-size: 4.65rem;
+  line-height: 0.96;
+  letter-spacing: 0;
+}
+
+.intro-text {
+  max-width: 720px;
+  margin: 28px 0 0;
+  color: #c7d5e0;
+  font-size: 1.28rem;
+  line-height: 1.7;
+  letter-spacing: 0;
+}
+
+.login-button {
+  min-width: 212px;
+  min-height: 52px;
+  margin-top: 38px;
+  border: 1px solid rgba(155, 217, 58, 0.74);
+  border-radius: 999px;
+  padding: 0 30px;
+  color: #071009;
+  background: linear-gradient(180deg, var(--steam-green-bright), var(--steam-green) 56%, var(--steam-green-deep));
+  box-shadow:
+    0 14px 34px rgba(117, 176, 34, 0.23),
+    inset 0 1px 0 rgba(255, 255, 255, 0.36);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  transition:
+    box-shadow 150ms ease,
+    filter 150ms ease,
+    transform 150ms ease;
+}
+
+.login-button:hover {
+  filter: brightness(1.06);
+}
+
+.login-button:active {
+  transform: translateY(2px) scale(0.985);
+  box-shadow:
+    0 8px 18px rgba(117, 176, 34, 0.18),
+    inset 0 2px 4px rgba(0, 0, 0, 0.24);
+}
+
+.login-button:focus-visible,
+.language-switch button:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 3px;
+}
+
+.login-status {
+  min-height: 1.5em;
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    min-height: 58px;
+    padding: 0 18px;
+  }
+
+  .brand {
+    max-width: 170px;
+    font-size: 0.8rem;
+  }
+
+  .language-switch button {
+    min-width: 48px;
+    padding: 0 10px;
+  }
+
+  .intro-page,
+  .intro-band {
+    min-height: calc(100vh - 58px);
+  }
+
+  .intro-band {
+    padding: 56px 20px 72px;
+  }
+
+  h1 {
+    font-size: 2.72rem;
+    line-height: 1.02;
+  }
+
+  .intro-text {
+    font-size: 1.04rem;
+    line-height: 1.72;
+  }
+
+  .login-button {
+    width: min(100%, 280px);
+  }
+}

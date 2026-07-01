@@ -7,6 +7,8 @@
     "node": ">=22"
   },
   "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "test": "node --test tests/landing-page-contract.test.mjs",
     "verify": "node scripts/verify.mjs"
   }
 }

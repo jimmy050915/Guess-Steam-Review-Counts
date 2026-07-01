@@ -1,0 +1,11 @@
+{
+  "page.title": "Guess Steam Review Counts",
+  "brand.name": "Guess Steam Review Counts",
+  "landing.heading": "Guess Game Review Counts on Steam",
+  "landing.intro": "Watch the trailer for any game on Steam, then trust your instinct and guess how many reviews it has. Give it a try!",
+  "landing.login.button": "Sign in with Steam",
+  "landing.login.pending": "The sign-in flow will be enabled when Steam account access is connected.",
+  "language.toggle": "Language",
+  "language.zh": "中文",
+  "language.en": "EN"
+}

@@ -2,16 +2,23 @@
 
 一个 Web 小游戏项目：玩家根据 Steam 游戏信息猜测某款游戏的评论数。
 
-当前阶段只初始化仓库结构、协作规范和统一验证入口，不实现实际玩法、Steam API、本地代理或前端界面。
+当前阶段已建立仓库结构、协作规范、统一验证入口，以及介绍与登录入口静态页面。不实现实际玩法、Steam API、本地代理或真实 Steam 登录。
 
 ## Commands
 
 ```powershell
 npm ci
+npm run dev
 npm run verify
 ```
 
 `npm run verify` 是本地代理、Codex Actions 和 CI 的统一主验证入口。新增检查时应扩展仓库脚本，而不是在外部环境复制一套命令。
+
+本地预览默认从 `5173` 端口启动；如果端口被占用，开发服务器会自动尝试后续端口，并在终端打印实际地址。
+
+```powershell
+http://127.0.0.1:5173
+```
 
 ## Project Layout
 
