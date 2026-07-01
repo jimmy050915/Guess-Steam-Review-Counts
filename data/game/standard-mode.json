@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "modeId": "standard-mode",
+  "rules": {
+    "queueSize": 10,
+    "readyQueueSize": 2,
+    "initialHealth": 3,
+    "scoreBase": 0,
+    "minReviewCount": 50,
+    "damageErrorPercent": 200,
+    "requiresVideo": true
+  },
+  "scoring": {
+    "id": "standard-error-percent-v1",
+    "scoreBands": [
+      { "id": "error-10", "maxErrorPercent": 10, "points": 100 },
+      { "id": "error-20", "maxErrorPercent": 20, "points": 90 },
+      { "id": "error-30", "maxErrorPercent": 30, "points": 70 },
+      { "id": "error-40", "maxErrorPercent": 40, "points": 50 },
+      { "id": "error-60", "maxErrorPercent": 60, "points": 20 },
+      { "id": "error-100", "maxErrorPercent": 100, "points": 10 },
+      { "id": "error-over-100-safe", "maxErrorPercent": 200, "points": 1 }
+    ]
+  },
+  "selection": {
+    "maxCandidateAttempts": 180,
+    "storeSearchPageCount": 4,
+    "storeSearchPageSize": 50,
+    "storeSearchMaxStart": 5000,
+    "reviewBuckets": [
+      { "id": "50-99", "min": 50, "max": 99 },
+      { "id": "100-199", "min": 100, "max": 199 },
+      { "id": "200-499", "min": 200, "max": 499 },
+      { "id": "500-999", "min": 500, "max": 999 },
+      { "id": "1000-1999", "min": 1000, "max": 1999 },
+      { "id": "2000-4999", "min": 2000, "max": 4999 },
+      { "id": "5000-9999", "min": 5000, "max": 9999 },
+      { "id": "10000-24999", "min": 10000, "max": 24999 },
+      { "id": "25000-49999", "min": 25000, "max": 49999 },
+      { "id": "50000-plus", "min": 50000, "max": null }
+    ]
+  },
+  "candidatePool": {
+    "path": ".cache/standard-candidate-pool.json",
+    "schemaVersion": 1,
+    "maxEntriesPerBucket": 80
+  },
+  "video": {
+    "trimStartSeconds": 10,
+    "trimEndSeconds": 10,
+    "minimumPlayableSecondsAfterTrim": 10
+  },
+  "filters": [
+    {
+      "id": "game-only",
+      "type": "app-type",
+      "allowedTypes": ["game"]
+    },
+    {
+      "id": "sfw-standard",
+      "type": "sfw",
+      "requiredAgeMax": 0,
+      "excludedTextMatches": ["adult only"]
+    },
+    {
+      "id": "minimum-review-count",
+      "type": "min-review-count",
+      "value": 50
+    }
+  ],
+  "store": {
+    "path": ".cache/standard-mode-store.json",
+    "schemaVersion": 1
+  }
+}

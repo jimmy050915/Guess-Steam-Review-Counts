@@ -6,8 +6,20 @@ const appState = {
   activeModeId: null,
   screenId: config.appState.initialScreenId,
   signingIn: false,
+  standardMode: {
+    loading: false,
+    state: null
+  },
   user: null
 };
+const screenTransitionConfig = config.layout.screenTransition ?? {};
+const screenTransitionMs = Number.isInteger(screenTransitionConfig.durationMs)
+  ? screenTransitionConfig.durationMs
+  : 160;
+let hlsInstance = null;
+let videoTrimController = null;
+let shortVideoSkipInProgress = false;
+let screenTransitionToken = 0;
 
 const elements = {
   accountAvatar: document.querySelector("#accountAvatar"),
@@ -28,8 +40,48 @@ const elements = {
   menuTitle: document.querySelector("#menuTitle"),
   modeList: document.querySelector("#modeList"),
   pageTitle: document.querySelector("#pageTitle"),
+  standardFinalScore: document.querySelector("#standardFinalScore"),
+  standardFinalStreak: document.querySelector("#standardFinalStreak"),
+  standardGameCover: document.querySelector("#standardGameCover"),
+  standardGameCoverLink: document.querySelector("#standardGameCoverLink"),
+  standardGameInfoHeading: document.querySelector("#standardGameInfoHeading"),
+  standardGameLoading: document.querySelector("#standardGameLoading"),
+  standardGameLoadingPanel: document.querySelector("#standardGameLoadingPanel"),
+  standardGameLoadingProgress: document.querySelector("#standardGameLoadingProgress"),
+  standardGameName: document.querySelector("#standardGameName"),
   standardGameScreen: document.querySelector("#standardGameScreen"),
-  standardGameTitle: document.querySelector("#standardGameTitle")
+  standardGameTitle: document.querySelector("#standardGameTitle"),
+  standardGameVideo: document.querySelector("#standardGameVideo"),
+  standardGuessButton: document.querySelector("#standardGuessButton"),
+  standardGuessForm: document.querySelector("#standardGuessForm"),
+  standardGuessHint: document.querySelector("#standardGuessHint"),
+  standardGuessInput: document.querySelector("#standardGuessInput"),
+  standardGuessLabel: document.querySelector("#standardGuessLabel"),
+  standardGuessNumberLabel: document.querySelector("#standardGuessNumberLabel"),
+  standardGuessNumberValue: document.querySelector("#standardGuessNumberValue"),
+  standardGuessStatus: document.querySelector("#standardGuessStatus"),
+  standardHealthLabel: document.querySelector("#standardHealthLabel"),
+  standardHealthValue: document.querySelector("#standardHealthValue"),
+  standardLastGame: document.querySelector("#standardLastGame"),
+  standardLastGameCover: document.querySelector("#standardLastGameCover"),
+  standardLastGameCoverLink: document.querySelector("#standardLastGameCoverLink"),
+  standardLastGameHeading: document.querySelector("#standardLastGameHeading"),
+  standardLastGameName: document.querySelector("#standardLastGameName"),
+  standardLastGameReviewCount: document.querySelector("#standardLastGameReviewCount"),
+  standardPlayLayout: document.querySelector("#standardPlayLayout"),
+  standardRecordNotice: document.querySelector("#standardRecordNotice"),
+  standardResultLayout: document.querySelector("#standardResultLayout"),
+  standardResultTitle: document.querySelector("#standardResultTitle"),
+  standardRestartButton: document.querySelector("#standardRestartButton"),
+  standardReturnMenuButton: document.querySelector("#standardReturnMenuButton"),
+  standardRevealedGame: document.querySelector("#standardRevealedGame"),
+  standardReviewCount: document.querySelector("#standardReviewCount"),
+  standardRoundResult: document.querySelector("#standardRoundResult"),
+  standardScoreLabel: document.querySelector("#standardScoreLabel"),
+  standardScoreValue: document.querySelector("#standardScoreValue"),
+  standardStreakLabel: document.querySelector("#standardStreakLabel"),
+  standardStreakValue: document.querySelector("#standardStreakValue"),
+  standardWaitingReveal: document.querySelector("#standardWaitingReveal")
 };
 
 const urlLocale = new URLSearchParams(window.location.search).get("lang");
@@ -56,6 +108,27 @@ elements.menuStage.addEventListener("click", (event) => {
   }
 });
 
+elements.standardGuessForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  void handleStandardSubmit();
+});
+
+elements.standardGuessInput.addEventListener("wheel", preventFocusedNumberWheel, { passive: false });
+
+elements.standardRestartButton.addEventListener("click", () => {
+  void restartStandardGame();
+});
+
+elements.standardReturnMenuButton.addEventListener("click", () => {
+  window.location.assign("/");
+});
+
+function preventFocusedNumberWheel(event) {
+  if (document.activeElement === elements.standardGuessInput) {
+    event.preventDefault();
+  }
+}
+
 function currentLocale() {
   return document.documentElement.lang || config.defaultLocale;
 }
@@ -81,8 +154,20 @@ async function applyLocale(locale) {
   elements.logoutButtonText.textContent = getLocalizedText(bundle, "account.logout.button");
   elements.menuTitle.textContent = getLocalizedText(bundle, menuScreen.headingKey);
   elements.standardGameTitle.textContent = getLocalizedText(bundle, standardGameScreen.headingKey);
+  elements.standardGuessLabel.textContent = getLocalizedText(bundle, config.standardGame.labels.guessLabelKey);
+  elements.standardGuessHint.textContent = getLocalizedText(bundle, config.standardGame.labels.guessHintKey);
+  elements.standardHealthLabel.textContent = getLocalizedText(bundle, config.standardGame.labels.healthLabelKey);
+  elements.standardScoreLabel.textContent = getLocalizedText(bundle, config.standardGame.labels.scoreLabelKey);
+  elements.standardStreakLabel.textContent = getLocalizedText(bundle, config.standardGame.labels.streakLabelKey);
+  elements.standardGuessNumberLabel.textContent = getLocalizedText(bundle, config.standardGame.labels.guessNumberLabelKey);
+  elements.standardGameInfoHeading.textContent = getLocalizedText(bundle, config.standardGame.labels.gameInfoHeadingKey);
+  elements.standardResultTitle.textContent = getLocalizedText(bundle, config.standardGame.labels.gameOverHeadingKey);
+  elements.standardLastGameHeading.textContent = getLocalizedText(bundle, config.standardGame.labels.lastGameHeadingKey);
+  elements.standardRestartButton.textContent = getLocalizedText(bundle, config.standardGame.labels.restartButtonKey);
+  elements.standardReturnMenuButton.textContent = getLocalizedText(bundle, config.standardGame.labels.returnMenuButtonKey);
   elements.modeList.setAttribute("aria-label", getLocalizedText(bundle, menuScreen.ariaLabelKey));
   elements.languageSwitch.setAttribute("aria-label", getLocalizedText(bundle, config.languageToggle.labelKey));
+  elements.standardGuessInput.min = String(config.standardGame.input.min);
 
   for (const button of elements.languageSwitch.querySelectorAll("button")) {
     const isActive = button.dataset.locale === nextLocale;
@@ -94,6 +179,7 @@ async function applyLocale(locale) {
   if (appState.activeModeId) {
     renderModeDescription(getModeConfig(appState.activeModeId), bundle);
   }
+  renderStandardGame();
 
   if (!appState.signingIn) {
     elements.loginStatus.textContent = "";
@@ -203,6 +289,43 @@ async function syncSession() {
 
 function setScreen(screenId) {
   const nextScreenId = getScreenConfig(screenId)?.id ?? config.appState.initialScreenId;
+  const shouldFade = shouldUseScreenTransition(nextScreenId);
+  const transitionToken = ++screenTransitionToken;
+
+  if (!shouldFade) {
+    document.body.classList.remove("is-screen-fading");
+    applyScreenState(nextScreenId);
+    return;
+  }
+
+  document.body.classList.add("is-screen-fading");
+  window.setTimeout(() => {
+    if (transitionToken !== screenTransitionToken) {
+      return;
+    }
+
+    applyScreenState(nextScreenId);
+    window.requestAnimationFrame(() => {
+      if (transitionToken === screenTransitionToken) {
+        document.body.classList.remove("is-screen-fading");
+      }
+    });
+  }, screenTransitionMs);
+}
+
+function shouldUseScreenTransition(nextScreenId) {
+  if (screenTransitionConfig.kind !== "fade" || screenTransitionMs <= 0) {
+    return false;
+  }
+
+  if (!document.body.dataset.screen || appState.screenId === nextScreenId) {
+    return false;
+  }
+
+  return !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function applyScreenState(nextScreenId) {
   const isLoginScreen = nextScreenId === config.appState.initialScreenId;
   const isMainMenuScreen = nextScreenId === config.appState.authenticatedScreenId;
   const isStandardGameScreen = nextScreenId === "standard-game";
@@ -224,6 +347,9 @@ function setScreen(screenId) {
   } else if (isStandardGameScreen) {
     elements.loginStatus.textContent = "";
     elements.standardGameTitle.focus({ preventScroll: true });
+    void loadStandardState();
+  } else {
+    detachStandardVideo();
   }
 }
 
@@ -308,6 +434,459 @@ function renderModeDescription(mode, bundle) {
 
   layout.append(top, records);
   elements.menuDescription.replaceChildren(layout);
+}
+
+async function loadStandardState() {
+  if (!appState.user || appState.standardMode.loading) {
+    return;
+  }
+
+  appState.standardMode.loading = true;
+  renderStandardGame();
+
+  try {
+    appState.standardMode.state = await requestStandardApi(config.standardGame.api.statePath, {
+      method: "GET"
+    });
+    elements.standardGuessStatus.textContent = "";
+  } catch (error) {
+    elements.standardGuessStatus.textContent = await getStandardErrorText(error.code);
+  } finally {
+    appState.standardMode.loading = false;
+    renderStandardGame();
+  }
+}
+
+async function handleStandardSubmit() {
+  const state = appState.standardMode.state;
+  if (!state || appState.standardMode.loading) {
+    return;
+  }
+
+  if (state.result) {
+    await nextStandardGame();
+    return;
+  }
+
+  const guessValue = elements.standardGuessInput.value;
+  const parsedGuess = Number.parseInt(guessValue, 10);
+  if (!Number.isInteger(parsedGuess) || parsedGuess < config.standardGame.input.min) {
+    elements.standardGuessStatus.textContent = await getStandardErrorText("invalid_guess");
+    return;
+  }
+
+  appState.standardMode.loading = true;
+  renderStandardGame();
+  try {
+    appState.standardMode.state = await requestStandardApi(config.standardGame.api.guessPath, {
+      method: "POST",
+      body: {
+        [config.standardGame.input.name]: parsedGuess
+      }
+    });
+    elements.standardGuessStatus.textContent = "";
+  } catch (error) {
+    elements.standardGuessStatus.textContent = await getStandardErrorText(error.code);
+  } finally {
+    appState.standardMode.loading = false;
+    renderStandardGame();
+  }
+}
+
+async function nextStandardGame() {
+  appState.standardMode.loading = true;
+  renderStandardGame();
+  try {
+    appState.standardMode.state = await requestStandardApi(config.standardGame.api.nextPath, {
+      method: "POST"
+    });
+    elements.standardGuessInput.value = "";
+    elements.standardGuessStatus.textContent = "";
+  } catch (error) {
+    elements.standardGuessStatus.textContent = await getStandardErrorText(error.code);
+  } finally {
+    appState.standardMode.loading = false;
+    renderStandardGame();
+  }
+}
+
+async function restartStandardGame() {
+  if (appState.standardMode.loading) {
+    return;
+  }
+
+  appState.standardMode.loading = true;
+  renderStandardGame();
+  try {
+    appState.standardMode.state = await requestStandardApi(config.standardGame.api.restartPath, {
+      method: "POST"
+    });
+    elements.standardGuessInput.value = "";
+    elements.standardGuessStatus.textContent = "";
+  } catch (error) {
+    elements.standardGuessStatus.textContent = await getStandardErrorText(error.code);
+  } finally {
+    appState.standardMode.loading = false;
+    renderStandardGame();
+  }
+}
+
+async function requestStandardApi(path, { method, body } = {}) {
+  const response = await fetch(path, {
+    method,
+    cache: "no-store",
+    credentials: "same-origin",
+    headers: body ? { "Content-Type": "application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(payload.error ?? "state_unavailable");
+    error.code = payload.error ?? "state_unavailable";
+    throw error;
+  }
+
+  return payload;
+}
+
+function renderStandardGame() {
+  const bundle = localeCache.get(currentLocale());
+  if (!bundle) {
+    return;
+  }
+
+  const state = appState.standardMode.state;
+  const isLoading = appState.standardMode.loading;
+  const isGameOver = state?.status === "game-over";
+  const showLoading = isLoading || !state;
+  const loadingText = showLoading
+    ? getLocalizedText(bundle, config.standardGame.labels.loadingKey)
+    : "";
+
+  elements.standardPlayLayout.hidden = isGameOver;
+  elements.standardResultLayout.hidden = !isGameOver;
+  elements.standardGameLoadingPanel.hidden = !showLoading;
+  elements.standardGameLoading.textContent = loadingText;
+  elements.standardRestartButton.disabled = isLoading;
+
+  if (showLoading) {
+    elements.standardGameLoadingProgress.setAttribute("aria-valuetext", loadingText);
+  } else {
+    elements.standardGameLoadingProgress.removeAttribute("aria-valuetext");
+  }
+
+  if (!state) {
+    elements.standardHealthValue.textContent = "";
+    elements.standardScoreValue.textContent = "";
+    elements.standardStreakValue.textContent = "";
+    elements.standardGuessNumberValue.textContent = "";
+    elements.standardGuessButton.textContent = getLocalizedText(bundle, config.standardGame.labels.submitButtonKey);
+    elements.standardGuessButton.disabled = true;
+    elements.standardGuessInput.disabled = true;
+    return;
+  }
+
+  elements.standardHealthValue.textContent = state.health.hearts || "0";
+  elements.standardScoreValue.textContent = formatNumber(state.score);
+  elements.standardStreakValue.textContent = formatNumber(state.streak);
+  elements.standardGuessNumberValue.textContent = formatNumber(state.guessNumber);
+  elements.standardGuessButton.textContent = getLocalizedText(
+    bundle,
+    state.result ? config.standardGame.labels.nextButtonKey : config.standardGame.labels.submitButtonKey
+  );
+  elements.standardGuessButton.disabled = isLoading || isGameOver;
+  elements.standardGuessInput.disabled = isLoading || Boolean(state.result) || isGameOver;
+
+  if (!isGameOver && state.current?.video) {
+    void attachStandardVideo(state.current.video);
+  }
+
+  renderRevealedGame(state, bundle);
+  renderStandardResult(state, bundle);
+}
+
+function renderRevealedGame(state, bundle) {
+  const result = state.result;
+  elements.standardRevealedGame.hidden = !result;
+  elements.standardWaitingReveal.hidden = Boolean(result);
+  elements.standardWaitingReveal.textContent = getLocalizedText(bundle, config.standardGame.labels.waitingRevealKey);
+
+  if (!result) {
+    elements.standardGameCover.removeAttribute("src");
+    elements.standardGameCoverLink.removeAttribute("href");
+    elements.standardGameName.removeAttribute("href");
+    elements.standardGameName.textContent = "";
+    elements.standardReviewCount.textContent = "";
+    elements.standardRoundResult.textContent = "";
+    return;
+  }
+
+  renderGameIdentity({
+    game: result.game,
+    cover: elements.standardGameCover,
+    coverLink: elements.standardGameCoverLink,
+    nameLink: elements.standardGameName,
+    reviewCount: elements.standardReviewCount,
+    bundle
+  });
+  const roundStatusText = getLocalizedText(
+    bundle,
+    result.damaged
+      ? config.standardGame.labels.resultDamagedKey
+      : config.standardGame.labels.resultCorrectKey
+  );
+  const errorText = `${getLocalizedText(bundle, config.standardGame.labels.resultErrorPercentKey)}：${formatPercent(result.errorPercent)}`;
+  const scoreText = `${getLocalizedText(bundle, config.standardGame.labels.resultScoreKey)}：${formatNumber(result.score ?? 0)}`;
+  elements.standardRoundResult.replaceChildren(
+    `${roundStatusText} ${errorText}`,
+    document.createElement("br"),
+    scoreText
+  );
+}
+
+function renderStandardResult(state, bundle) {
+  if (state.status !== "game-over") {
+    return;
+  }
+
+  detachStandardVideo();
+  elements.standardFinalScore.textContent = `${getLocalizedText(bundle, config.standardGame.labels.finalScoreLabelKey)} ${formatNumber(state.score)}`;
+  elements.standardFinalStreak.textContent = `${getLocalizedText(bundle, config.standardGame.labels.finalStreakLabelKey)} ${formatNumber(state.finalStreak ?? state.runBestStreak ?? state.streak)}`;
+
+  const notices = [];
+  if (state.recordHighlights.highScore) {
+    notices.push(getLocalizedText(bundle, config.standardGame.labels.newHighScoreKey));
+  }
+  if (state.recordHighlights.bestStreak) {
+    notices.push(getLocalizedText(bundle, config.standardGame.labels.newBestStreakKey));
+  }
+  elements.standardRecordNotice.textContent = notices.length > 0
+    ? notices.join(" ")
+    : getLocalizedText(bundle, config.standardGame.labels.noRecordNoticeKey);
+
+  if (state.lastGame) {
+    renderGameIdentity({
+      game: state.lastGame,
+      cover: elements.standardLastGameCover,
+      coverLink: elements.standardLastGameCoverLink,
+      nameLink: elements.standardLastGameName,
+      reviewCount: elements.standardLastGameReviewCount,
+      bundle
+    });
+  }
+
+  elements.standardResultTitle.focus({ preventScroll: true });
+}
+
+function renderGameIdentity({ game, cover, coverLink, nameLink, reviewCount, bundle }) {
+  cover.src = game.coverUrl;
+  cover.alt = game.name;
+  coverLink.href = game.steamUrl;
+  coverLink.target = "_blank";
+  coverLink.rel = "noreferrer noopener";
+  nameLink.href = game.steamUrl;
+  nameLink.target = "_blank";
+  nameLink.rel = "noreferrer noopener";
+  nameLink.textContent = game.name;
+  reviewCount.textContent = `${getLocalizedText(bundle, config.standardGame.labels.reviewCountLabelKey)}：${formatNumber(game.reviewCount)}`;
+}
+
+async function attachStandardVideo(videoConfig) {
+  const sourceKey = JSON.stringify(videoConfig.sources);
+  if (elements.standardGameVideo.dataset.sourceKey === sourceKey) {
+    setupStandardVideoWindow(videoConfig);
+    return;
+  }
+
+  detachStandardVideo();
+  elements.standardGameVideo.dataset.sourceKey = sourceKey;
+  setupStandardVideoWindow(videoConfig);
+  if (videoConfig.posterUrl && !config.standardGame.video.hidePrePlayPoster) {
+    elements.standardGameVideo.poster = videoConfig.posterUrl;
+  } else {
+    elements.standardGameVideo.removeAttribute("poster");
+  }
+
+  const nativeSource = videoConfig.sources.find((source) => source.kind !== "hls" && elements.standardGameVideo.canPlayType(source.type));
+  if (nativeSource) {
+    elements.standardGameVideo.src = nativeSource.url;
+    elements.standardGameVideo.load();
+    return;
+  }
+
+  const hlsSource = videoConfig.sources.find((source) => source.kind === "hls");
+  if (hlsSource && elements.standardGameVideo.canPlayType("application/vnd.apple.mpegurl")) {
+    elements.standardGameVideo.src = hlsSource.url;
+    elements.standardGameVideo.load();
+    return;
+  }
+
+  if (hlsSource) {
+    const { default: Hls } = await import("/node_modules/hls.js/dist/hls.mjs");
+    if (Hls.isSupported()) {
+      hlsInstance = new Hls();
+      hlsInstance.loadSource(hlsSource.url);
+      hlsInstance.attachMedia(elements.standardGameVideo);
+    }
+  }
+}
+
+function detachStandardVideo() {
+  detachStandardVideoTrim();
+  if (hlsInstance) {
+    hlsInstance.destroy();
+    hlsInstance = null;
+  }
+  elements.standardGameVideo.removeAttribute("src");
+  elements.standardGameVideo.removeAttribute("poster");
+  delete elements.standardGameVideo.dataset.sourceKey;
+  delete elements.standardGameVideo.dataset.trimStart;
+  delete elements.standardGameVideo.dataset.trimEnd;
+  elements.standardGameVideo.load();
+}
+
+function setupStandardVideoWindow(videoConfig) {
+  detachStandardVideoTrim();
+
+  const playback = appState.standardMode.state?.videoPlayback ?? {};
+  const trimStartSeconds = normalizePlaybackSeconds(playback.trimStartSeconds);
+  const trimEndSeconds = normalizePlaybackSeconds(playback.trimEndSeconds);
+  const minimumPlayableSeconds = normalizePlaybackSeconds(playback.minimumPlayableSecondsAfterTrim);
+  const video = elements.standardGameVideo;
+  let trimEndAt = null;
+  let skipRequested = false;
+
+  const applyWindow = () => {
+    const metadataDuration = Number.isFinite(video.duration) && video.duration > 0
+      ? video.duration
+      : null;
+    const configuredDuration = Number.isFinite(videoConfig.durationSeconds) && videoConfig.durationSeconds > 0
+      ? videoConfig.durationSeconds
+      : null;
+    const durationSeconds = metadataDuration ?? configuredDuration;
+
+    if (!durationSeconds) {
+      if (trimStartSeconds > 0 && video.currentTime < trimStartSeconds) {
+        video.currentTime = trimStartSeconds;
+      }
+      return;
+    }
+
+    const trimStartAt = Math.min(trimStartSeconds, durationSeconds);
+    const trimEndAtCandidate = Math.max(trimStartAt, durationSeconds - trimEndSeconds);
+    const playableSeconds = trimEndAtCandidate - trimStartAt;
+
+    if (playableSeconds < minimumPlayableSeconds) {
+      if (!skipRequested) {
+        skipRequested = true;
+        void skipShortStandardVideo(durationSeconds);
+      }
+      return;
+    }
+
+    trimEndAt = trimEndAtCandidate;
+    video.dataset.trimStart = String(trimStartAt);
+    video.dataset.trimEnd = String(trimEndAt);
+
+    if (video.currentTime < trimStartAt || video.currentTime >= trimEndAt) {
+      video.currentTime = trimStartAt;
+    }
+  };
+
+  const clampToWindow = () => {
+    if (trimEndAt === null) {
+      applyWindow();
+      return;
+    }
+
+    const trimStartAt = Number.parseFloat(video.dataset.trimStart);
+    if (!Number.isFinite(trimStartAt)) {
+      return;
+    }
+
+    if (video.currentTime < trimStartAt || video.currentTime >= trimEndAt) {
+      video.currentTime = trimStartAt;
+    }
+  };
+
+  const stopAtTrimEnd = () => {
+    if (trimEndAt === null) {
+      applyWindow();
+      return;
+    }
+
+    if (video.currentTime >= trimEndAt - 0.05) {
+      video.pause();
+      clampToWindow();
+    }
+  };
+
+  video.addEventListener("loadedmetadata", applyWindow);
+  video.addEventListener("durationchange", applyWindow);
+  video.addEventListener("seeking", clampToWindow);
+  video.addEventListener("timeupdate", stopAtTrimEnd);
+  videoTrimController = () => {
+    video.removeEventListener("loadedmetadata", applyWindow);
+    video.removeEventListener("durationchange", applyWindow);
+    video.removeEventListener("seeking", clampToWindow);
+    video.removeEventListener("timeupdate", stopAtTrimEnd);
+  };
+
+  applyWindow();
+}
+
+function detachStandardVideoTrim() {
+  if (videoTrimController) {
+    videoTrimController();
+    videoTrimController = null;
+  }
+}
+
+async function skipShortStandardVideo(durationSeconds) {
+  if (shortVideoSkipInProgress || appState.standardMode.loading) {
+    return;
+  }
+
+  shortVideoSkipInProgress = true;
+  appState.standardMode.loading = true;
+  renderStandardGame();
+
+  try {
+    appState.standardMode.state = await requestStandardApi(config.standardGame.api.skipShortVideoPath, {
+      method: "POST",
+      body: { durationSeconds }
+    });
+    elements.standardGuessInput.value = "";
+    elements.standardGuessStatus.textContent = "";
+  } catch (error) {
+    elements.standardGuessStatus.textContent = await getStandardErrorText(error.code);
+  } finally {
+    shortVideoSkipInProgress = false;
+    appState.standardMode.loading = false;
+    renderStandardGame();
+  }
+}
+
+function normalizePlaybackSeconds(value) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) && numericValue > 0 ? numericValue : 0;
+}
+
+async function getStandardErrorText(errorCode) {
+  const bundle = await loadLocale(currentLocale());
+  const entry = config.standardGame.errorMessages[errorCode] ?? config.standardGame.errorMessages.state_unavailable;
+  return getLocalizedText(bundle, entry.messageKey);
+}
+
+function formatNumber(value) {
+  return new Intl.NumberFormat(currentLocale()).format(value ?? 0);
+}
+
+function formatPercent(value) {
+  return `${new Intl.NumberFormat(currentLocale(), {
+    maximumFractionDigits: 1
+  }).format(value ?? 0)}%`;
 }
 
 function updateModeButtonLabels(bundle) {

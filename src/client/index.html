@@ -48,7 +48,78 @@
 
         <section class="game-screen" id="standardGameScreen" aria-labelledby="standardGameTitle" hidden>
           <div class="game-stage">
-            <h1 class="game-title" id="standardGameTitle" tabindex="-1"></h1>
+            <div class="game-play-layout" id="standardPlayLayout">
+              <section class="game-main-area" aria-labelledby="standardGameTitle">
+                <h1 class="game-title" id="standardGameTitle" tabindex="-1"></h1>
+                <div class="video-area" aria-live="polite">
+                  <video class="game-video" id="standardGameVideo" controls playsinline></video>
+                </div>
+                <div class="game-loading-panel" id="standardGameLoadingPanel" hidden>
+                  <div class="game-loading-progress" id="standardGameLoadingProgress" role="progressbar" aria-labelledby="standardGameLoading">
+                    <span></span>
+                  </div>
+                  <p class="game-loading" id="standardGameLoading" aria-live="polite"></p>
+                </div>
+                <form class="guess-form" id="standardGuessForm">
+                  <label class="guess-label" id="standardGuessLabel" for="standardGuessInput"></label>
+                  <div class="guess-control-row">
+                    <input class="guess-input" id="standardGuessInput" name="reviewCountGuess" type="number" min="50" step="1" inputmode="numeric">
+                    <button class="guess-submit" id="standardGuessButton" type="submit"></button>
+                  </div>
+                  <p class="guess-hint" id="standardGuessHint"></p>
+                  <p class="guess-status" id="standardGuessStatus" aria-live="polite"></p>
+                </form>
+              </section>
+
+              <aside class="game-status-area" aria-live="polite">
+                <div class="status-line">
+                  <span class="status-label" id="standardHealthLabel"></span>
+                  <span class="status-value" id="standardHealthValue"></span>
+                </div>
+                <div class="status-line">
+                  <span class="status-label" id="standardScoreLabel"></span>
+                  <span class="status-value" id="standardScoreValue"></span>
+                </div>
+                <div class="status-line">
+                  <span class="status-label" id="standardStreakLabel"></span>
+                  <span class="status-value" id="standardStreakValue"></span>
+                </div>
+                <div class="status-line">
+                  <span class="status-label" id="standardGuessNumberLabel"></span>
+                  <span class="status-value" id="standardGuessNumberValue"></span>
+                </div>
+
+                <section class="revealed-game" id="standardRevealedGame" hidden>
+                  <h2 id="standardGameInfoHeading"></h2>
+                  <a class="revealed-cover-link" id="standardGameCoverLink" target="_blank" rel="noreferrer noopener">
+                    <img class="revealed-cover" id="standardGameCover" alt="">
+                  </a>
+                  <a class="revealed-name" id="standardGameName" target="_blank" rel="noreferrer noopener"></a>
+                  <p class="revealed-review-count" id="standardReviewCount"></p>
+                  <p class="round-result" id="standardRoundResult"></p>
+                </section>
+                <p class="waiting-reveal" id="standardWaitingReveal"></p>
+              </aside>
+            </div>
+
+            <section class="game-result-layout" id="standardResultLayout" hidden>
+              <h1 class="result-title" id="standardResultTitle" tabindex="-1"></h1>
+              <p class="result-stat" id="standardFinalScore"></p>
+              <p class="result-stat" id="standardFinalStreak"></p>
+              <p class="record-notice" id="standardRecordNotice"></p>
+              <section class="result-last-game" id="standardLastGame">
+                <h2 id="standardLastGameHeading"></h2>
+                <a class="revealed-cover-link" id="standardLastGameCoverLink" target="_blank" rel="noreferrer noopener">
+                  <img class="revealed-cover" id="standardLastGameCover" alt="">
+                </a>
+                <a class="revealed-name" id="standardLastGameName" target="_blank" rel="noreferrer noopener"></a>
+                <p class="revealed-review-count" id="standardLastGameReviewCount"></p>
+              </section>
+              <div class="result-actions">
+                <button class="restart-button" id="standardRestartButton" type="button"></button>
+                <button class="return-menu-button" id="standardReturnMenuButton" type="button"></button>
+              </div>
+            </section>
           </div>
         </section>
       </main>

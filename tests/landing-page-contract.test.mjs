@@ -35,10 +35,18 @@ test("app data declares bilingual login and main menu flow", async () => {
   assert.equal(config.defaultLocale, "zh-CN");
   assert.equal(config.layout.kind, "login-to-main-menu-flow");
   assert.equal(config.layout.allowsCards, false);
+  assert.equal(config.standardGame.layout.allowsCards, false);
+  assert.equal(config.standardGame.video.hidePrePlayPoster, true);
   assert.equal(config.appState.initialScreenId, "login");
   assert.equal(config.appState.authenticatedScreenId, "main-menu");
   assert.equal(config.appState.sessionSource, "server-cookie");
   assert.equal(config.layout.screens.find((screen) => screen.id === "standard-game").routePath, "/game/standard");
+  assert.equal(config.standardGame.api.statePath, "/api/standard/state");
+  assert.equal(config.standardGame.api.guessPath, "/api/standard/guess");
+  assert.equal(config.standardGame.api.nextPath, "/api/standard/next");
+  assert.equal(config.standardGame.api.skipShortVideoPath, "/api/standard/skip-short-video");
+  assert.equal(config.standardGame.api.restartPath, "/api/standard/restart");
+  assert.equal(config.standardGame.input.min, 50);
   assert.equal(config.auth.provider, "steam-openid");
   assert.equal(config.auth.loginPath, "/auth/steam");
   assert.equal(config.auth.callbackPath, "/auth/steam/callback");
@@ -52,6 +60,11 @@ test("app data declares bilingual login and main menu flow", async () => {
   assert.equal(config.layout.mainMenu.modeListShift, "left-on-mode-click");
   assert.equal(config.layout.mainMenu.descriptionReveal, "slide-from-right-after-click");
   assert.equal(config.layout.mainMenu.descriptionContent, "mode-rules-and-records");
+  assert.deepEqual(config.layout.screenTransition, {
+    kind: "fade",
+    durationMs: 160,
+    reducedMotion: "none"
+  });
   assert.equal(config.mainMenu.modes.length, 1);
   const standardMode = config.mainMenu.modes[0];
   assert.equal(standardMode.id, "standard-mode");
@@ -88,14 +101,21 @@ test("app data declares bilingual login and main menu flow", async () => {
   assert.equal(localeBundles["zh-CN"]["mainMenu.standardMode.button"], "标准模式");
   assert.equal(localeBundles["zh-CN"]["mainMenu.standardMode.readyButton"], "再次点击开始游戏");
   assert.equal(localeBundles["zh-CN"]["mainMenu.standardMode.description.heading"], "标准模式");
-  assert.equal(localeBundles["zh-CN"]["mainMenu.standardMode.description.body"], "三条生命，若猜测数差十倍则损失生命。");
+  assert.equal(localeBundles["zh-CN"]["mainMenu.standardMode.description.body"], "三条生命，按误差率获得100到1分，猜测误差超过200%则损失生命。");
   assert.equal(localeBundles["zh-CN"]["mainMenu.standardMode.filters.heading"], "标准过滤集");
   assert.equal(localeBundles["zh-CN"]["mainMenu.standardMode.filters.item.gameOnly"], "只选取游戏，不选取DLC等其他内容。");
-  assert.equal(localeBundles["zh-CN"]["mainMenu.standardMode.filters.item.sfw"], "无敏感内容（SFW）。");
+  assert.equal(localeBundles["zh-CN"]["mainMenu.standardMode.filters.item.sfw"], "排除需要年龄认证以及带有 Adult Only 标签的游戏。");
   assert.equal(localeBundles["zh-CN"]["mainMenu.standardMode.filters.item.minReviews"], "选择的游戏至少有50条评论。");
   assert.equal(localeBundles["zh-CN"]["mainMenu.standardMode.records.highScore"], "最高分：");
   assert.equal(localeBundles["zh-CN"]["mainMenu.standardMode.records.bestCombo"], "最高连击数：");
   assert.equal(localeBundles["zh-CN"]["game.standard.heading"], "标准模式");
+  assert.equal(localeBundles["zh-CN"]["game.standard.submit"], "提交");
+  assert.equal(localeBundles["zh-CN"]["game.standard.next"], "下一款游戏");
+  assert.equal(localeBundles["zh-CN"]["game.standard.restart"], "重新开始");
+  assert.equal(localeBundles["zh-CN"]["game.standard.result.errorPercent"], "猜测误差");
+  assert.equal(localeBundles["zh-CN"]["game.standard.result.score"], "本轮得分");
+  assert.equal(localeBundles["zh-CN"]["game.standard.gameOver"], "游戏结束");
+  assert.equal(localeBundles["zh-CN"]["game.standard.noRecordNotice"], "暂无");
   assert.equal(localeBundles["en-US"]["mainMenu.standardMode.readyButton"], "Click again to start");
   assert.equal(
     localeBundles["zh-CN"]["landing.intro"],
@@ -121,6 +141,23 @@ test("client assets avoid framed layouts and preserve the pressed login motion",
   assert.match(clientScript, /window\.location\.assign\(config\.auth\.loginPath\)/);
   assert.match(clientScript, /window\.location\.assign\(config\.auth\.logoutPath\)/);
   assert.match(clientScript, /fetch\(config\.auth\.sessionPath/);
+  assert.match(clientScript, /fetch\(path,\s*\{/);
+  assert.match(clientScript, /config\.standardGame\.api\.statePath/);
+  assert.match(clientScript, /config\.standardGame\.api\.guessPath/);
+  assert.match(clientScript, /config\.standardGame\.api\.nextPath/);
+  assert.match(clientScript, /config\.standardGame\.api\.skipShortVideoPath/);
+  assert.match(clientScript, /config\.standardGame\.api\.restartPath/);
+  assert.match(clientScript, /result\.errorPercent/);
+  assert.match(clientScript, /formatPercent\(result\.errorPercent\)/);
+  assert.match(clientScript, /result\.score/);
+  assert.match(clientScript, /document\.createElement\("br"\)/);
+  assert.match(clientScript, /standardGuessInput\.addEventListener\("wheel", preventFocusedNumberWheel, \{ passive: false \}\)/);
+  assert.match(clientScript, /event\.preventDefault\(\)/);
+  assert.match(clientScript, /screenTransitionConfig/);
+  assert.match(clientScript, /body\.classList\.add\("is-screen-fading"\)/);
+  assert.match(clientScript, /hidePrePlayPoster/);
+  assert.match(clientScript, /videoConfig\.posterUrl && !config\.standardGame\.video\.hidePrePlayPoster/);
+  assert.match(clientScript, /node_modules\/hls\.js\/dist\/hls\.mjs/);
   assert.match(clientScript, /handleModeClick\(mode\)/);
   assert.match(clientScript, /window\.location\.assign\(mode\.startPath\)/);
   assert.match(clientScript, /renderModeDescription\(mode,\s*bundle\)/);
@@ -129,6 +166,9 @@ test("client assets avoid framed layouts and preserve the pressed login motion",
   assert.match(clientScript, /event\.target\.closest\("\.mode-button"\)/);
   assert.match(clientScript, /setActiveMode\(null\)/);
   assert.match(serverScript, /new Set\(\["\/", "\/game\/standard"\]\)/);
+  assert.match(serverScript, /\/api\/standard\/state/);
+  assert.match(serverScript, /\/api\/standard\/skip-short-video/);
+  assert.match(serverScript, /standardModeRunner\.guess/);
   assert.match(html, /href="\/src\/client\/styles\.css"/);
   assert.match(html, /src="\/src\/client\/main\.js"/);
   assert.match(html, /id="accountSummary"/);
@@ -138,8 +178,21 @@ test("client assets avoid framed layouts and preserve the pressed login motion",
   assert.match(html, /id="mainMenuScreen"/);
   assert.match(html, /id="standardGameScreen"/);
   assert.match(html, /id="standardGameTitle"/);
+  assert.match(html, /id="standardGameVideo"/);
+  assert.match(html, /id="standardGameLoadingPanel"/);
+  assert.match(html, /id="standardGameLoadingProgress"/);
+  assert.match(html, /id="standardGuessForm"/);
+  assert.match(html, /id="standardRevealedGame"/);
+  assert.match(html, /id="standardResultLayout"/);
+  assert.match(html, /id="standardRestartButton"/);
+  assert.match(html, /id="standardReturnMenuButton"/);
+  assert.match(html, /rel="noreferrer noopener"/);
   assert.match(html, /id="modeList"/);
   assert.match(html, /class="mode-description"/);
+  assert.ok(
+    html.indexOf('id="standardGameLoadingPanel"') > html.indexOf('<video class="game-video" id="standardGameVideo"'),
+    "standard loading panel must render after the video element"
+  );
   assert.match(css, /--page-bg:\s*#1B2838/);
   assert.match(css, /body\s*\{[^}]*background:\s*var\(--page-bg\)/s);
   assert.match(css, /\.login-band\s*\{[^}]*background:\s*var\(--page-bg\)/s);
@@ -153,6 +206,16 @@ test("client assets avoid framed layouts and preserve the pressed login motion",
   assert.match(css, /\.mode-description-layout\s*\{[^}]*justify-content:\s*space-between/s);
   assert.match(css, /\.mode-description-records\s*\{/);
   assert.match(css, /\.game-stage\s*\{/);
+  assert.match(css, /\.game-play-layout\s*\{/);
+  assert.match(css, /\.video-area\s*\{/);
+  assert.match(css, /\.game-loading-panel\s*\{/);
+  assert.match(css, /\.game-loading-progress\s*\{/);
+  assert.match(css, /@keyframes loading-progress-slide/);
+  assert.match(css, /@media \(prefers-reduced-motion: no-preference\)/);
+  assert.match(css, /body\.is-screen-fading \.page-shell/);
+  assert.match(css, /\.game-status-area\s*\{/);
+  assert.match(css, /\.game-result-layout\s*\{/);
+  assert.match(css, /\.result-actions\s*\{/);
   assert.match(css, /\.mode-button\[data-active-animation="subtle-float"\]\[aria-expanded="true"\]\s*\{[^}]*animation:\s*subtle-button-float/s);
   assert.match(css, /@keyframes subtle-button-float/);
   assert.match(css, /border-radius:\s*999px/);

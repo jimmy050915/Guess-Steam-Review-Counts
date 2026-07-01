@@ -51,6 +51,17 @@ a {
   position: relative;
   min-height: 100vh;
   isolation: isolate;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .page-shell {
+    transition: opacity var(--screen-transition-duration, 160ms) ease;
+  }
+
+  body.is-screen-fading .page-shell {
+    opacity: 0;
+  }
 }
 
 .topbar {
@@ -255,7 +266,11 @@ h1 {
 .login-button:focus-visible,
 .language-switch button:focus-visible,
 .logout-button:focus-visible,
-.mode-button:focus-visible {
+.mode-button:focus-visible,
+.guess-submit:focus-visible,
+.restart-button:focus-visible,
+.return-menu-button:focus-visible,
+.guess-input:focus-visible {
   outline: 2px solid var(--amber);
   outline-offset: 3px;
 }
@@ -450,18 +465,298 @@ h1 {
 
 .game-stage {
   display: grid;
-  align-items: center;
-  padding: 76px 10vw 96px;
+  padding: 34px clamp(22px, 4vw, 58px) 46px;
   background: var(--page-bg);
 }
 
 .game-title {
-  font-size: 3.2rem;
+  font-size: clamp(2.2rem, 4vw, 3.2rem);
   line-height: 1;
 }
 
 .game-title:focus {
   outline: 0;
+}
+
+.game-play-layout {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 28vw);
+  gap: clamp(24px, 3vw, 44px);
+  align-items: stretch;
+}
+
+.game-main-area {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto auto auto auto;
+  gap: 22px;
+}
+
+.video-area {
+  position: relative;
+  width: 100%;
+  min-height: 280px;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid rgba(102, 192, 244, 0.24);
+  border-radius: 8px;
+  background: #070d13;
+}
+
+.game-video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  background: #05080c;
+}
+
+.game-loading {
+  margin: 0;
+  color: #c7d5e0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.game-loading-panel {
+  display: grid;
+  gap: 9px;
+  min-height: 34px;
+}
+
+.game-loading-progress {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(102, 192, 244, 0.14);
+}
+
+.game-loading-progress span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 38%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--steam-blue), var(--steam-green-bright));
+  animation: loading-progress-slide 1100ms ease-in-out infinite;
+}
+
+@keyframes loading-progress-slide {
+  0% {
+    transform: translateX(-105%);
+  }
+
+  100% {
+    transform: translateX(265%);
+  }
+}
+
+.guess-form {
+  display: grid;
+  gap: 10px;
+  max-width: min(640px, 100%);
+}
+
+.guess-label {
+  color: var(--ink);
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+.guess-control-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(136px, auto);
+  gap: 12px;
+}
+
+.guess-input {
+  min-width: 0;
+  min-height: 48px;
+  border: 1px solid #30465a;
+  border-radius: 8px;
+  padding: 0 14px;
+  color: var(--ink);
+  background: #101820;
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.guess-submit,
+.restart-button,
+.return-menu-button {
+  min-height: 48px;
+  border: 1px solid rgba(155, 217, 58, 0.72);
+  border-radius: 8px;
+  padding: 0 18px;
+  color: #071009;
+  background: linear-gradient(180deg, var(--steam-green-bright), var(--steam-green) 58%, var(--steam-green-deep));
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  transition:
+    filter 150ms ease,
+    transform 150ms ease;
+}
+
+.guess-submit:hover,
+.restart-button:hover,
+.return-menu-button:hover {
+  filter: brightness(1.06);
+}
+
+.guess-submit:disabled,
+.restart-button:disabled {
+  cursor: wait;
+  filter: saturate(0.72);
+}
+
+.guess-submit:active,
+.restart-button:active,
+.return-menu-button:active {
+  transform: translateY(2px);
+}
+
+.guess-hint,
+.guess-status,
+.waiting-reveal,
+.round-result,
+.revealed-review-count,
+.record-notice,
+.result-stat {
+  margin: 0;
+  color: #c7d5e0;
+  font-size: 0.94rem;
+  line-height: 1.55;
+  letter-spacing: 0;
+}
+
+.guess-status {
+  min-height: 1.45em;
+  color: var(--amber);
+}
+
+.game-status-area {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  border-left: 1px solid var(--line-soft);
+  padding-left: clamp(20px, 3vw, 34px);
+}
+
+.status-line {
+  display: grid;
+  grid-template-columns: minmax(96px, auto) minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+  min-height: 28px;
+}
+
+.status-label {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.status-value {
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.revealed-game,
+.result-last-game {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.revealed-game h2,
+.result-last-game h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.1rem;
+  line-height: 1.25;
+}
+
+.revealed-cover-link {
+  display: block;
+  width: 100%;
+  max-width: 340px;
+  line-height: 0;
+}
+
+.revealed-cover {
+  width: 100%;
+  aspect-ratio: 460 / 215;
+  display: block;
+  border: 1px solid rgba(102, 192, 244, 0.24);
+  border-radius: 8px;
+  object-fit: cover;
+  background: #101820;
+}
+
+.revealed-name {
+  color: var(--steam-blue);
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1.35;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.revealed-name:hover {
+  color: #9bdcff;
+  text-decoration: underline;
+}
+
+.game-result-layout {
+  min-height: calc(100vh - 64px - 80px);
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.result-title {
+  max-width: none;
+  font-size: clamp(2.6rem, 5vw, 4.4rem);
+}
+
+.result-title:focus {
+  outline: 0;
+}
+
+.result-last-game {
+  width: min(520px, 100%);
+  justify-items: center;
+  margin-top: 10px;
+}
+
+.result-last-game .revealed-cover-link {
+  max-width: 460px;
+}
+
+.result-actions {
+  width: min(540px, 100%);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.result-actions .restart-button,
+.result-actions .return-menu-button {
+  width: 100%;
+}
+
+.return-menu-button {
+  width: min(260px, 100%);
 }
 
 @media (max-width: 900px) {
@@ -491,6 +786,17 @@ h1 {
 
   .mode-description-layout {
     padding: 56px 22px 36px;
+  }
+
+  .game-play-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .game-status-area {
+    border-left: 0;
+    border-top: 1px solid var(--line-soft);
+    padding-left: 0;
+    padding-top: 22px;
   }
 }
 
@@ -610,5 +916,34 @@ h1 {
 
   .game-stage {
     padding: 56px 20px 72px;
+  }
+
+  .game-play-layout {
+    gap: 24px;
+  }
+
+  .game-main-area {
+    grid-template-rows: auto auto auto;
+  }
+
+  .video-area {
+    min-height: 190px;
+  }
+
+  .guess-control-row {
+    grid-template-columns: 1fr;
+  }
+
+  .result-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .status-line {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .game-result-layout {
+    min-height: calc(100vh - 58px - 72px);
   }
 }

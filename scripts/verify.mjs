@@ -19,16 +19,23 @@ const requiredPaths = [
   "scripts",
   "docs",
   "data/ui/landing-page.json",
+  "data/game/standard-mode.json",
   "data/localization/zh-CN.json",
   "data/localization/en-US.json",
   "src/client/index.html",
   "src/client/styles.css",
   "src/client/main.js",
   "src/server/http-client.mjs",
+  "src/server/standard-candidate-pool.mjs",
+  "src/server/standard-mode-runner.mjs",
+  "src/server/standard-mode-store.mjs",
+  "src/server/steam-standard-catalog.mjs",
   "src/server/steam-openid.mjs",
+  "src/shared/standard-mode-contract.mjs",
   "src/shared/ui-contract.mjs",
   "scripts/serve.mjs",
   "tests/landing-page-contract.test.mjs",
+  "tests/standard-mode-contract.test.mjs",
   "docs/landing-page-data.md",
   ".github/workflows/ci.yml",
 ];
@@ -79,7 +86,11 @@ async function main() {
 
 async function runNodeTests() {
   await new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, ["--test", "tests/landing-page-contract.test.mjs"], {
+    const child = spawn(process.execPath, [
+      "--test",
+      "tests/landing-page-contract.test.mjs",
+      "tests/standard-mode-contract.test.mjs"
+    ], {
       cwd: root,
       stdio: "inherit"
     });

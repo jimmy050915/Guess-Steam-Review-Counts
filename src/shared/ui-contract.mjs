@@ -73,6 +73,14 @@ export function validateLandingPageConfig(config, localeBundles) {
     errors.push("landing page layout must explicitly disallow card layouts");
   }
 
+  if (config.standardGame?.layout?.allowsCards !== false) {
+    errors.push("standard game layout must explicitly disallow card layouts");
+  }
+
+  if (config.standardGame?.video?.hidePrePlayPoster !== true) {
+    errors.push("standard game must hide pre-play trailer posters");
+  }
+
   const screenIds = new Set((config.layout?.screens ?? []).map((screen) => screen.id));
 
   if (config.appState?.initialScreenId !== "login") {
@@ -98,6 +106,26 @@ export function validateLandingPageConfig(config, localeBundles) {
 
   if (standardGameScreen?.routePath !== "/game/standard") {
     errors.push("standard-game screen route path must be /game/standard");
+  }
+
+  if (config.standardGame?.modeId !== "standard-mode") {
+    errors.push("standard game modeId must be standard-mode");
+  }
+
+  for (const [fieldName, expectedValue] of Object.entries({
+    statePath: "/api/standard/state",
+    guessPath: "/api/standard/guess",
+    nextPath: "/api/standard/next",
+    skipShortVideoPath: "/api/standard/skip-short-video",
+    restartPath: "/api/standard/restart"
+  })) {
+    if (config.standardGame?.api?.[fieldName] !== expectedValue) {
+      errors.push(`standard game api ${fieldName} must be ${expectedValue}`);
+    }
+  }
+
+  if (config.standardGame?.input?.min !== 50) {
+    errors.push("standard game input minimum must be 50");
   }
 
   if (config.appState?.sessionSource !== "server-cookie") {
@@ -153,6 +181,18 @@ export function validateLandingPageConfig(config, localeBundles) {
 
   if (config.layout?.mainMenu?.descriptionContent !== "mode-rules-and-records") {
     errors.push("main menu description content must use mode-rules-and-records");
+  }
+
+  if (config.layout?.screenTransition?.kind !== "fade") {
+    errors.push("screen transition kind must be fade");
+  }
+
+  if (config.layout?.screenTransition?.durationMs !== 160) {
+    errors.push("screen transition duration must be 160");
+  }
+
+  if (config.layout?.screenTransition?.reducedMotion !== "none") {
+    errors.push("screen transition reduced motion behavior must be none");
   }
 
   if (!Array.isArray(config.mainMenu?.modes) || config.mainMenu.modes.length === 0) {

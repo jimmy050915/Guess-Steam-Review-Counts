@@ -55,6 +55,11 @@
       "modeListShift": "left-on-mode-click",
       "descriptionReveal": "slide-from-right-after-click",
       "descriptionContent": "mode-rules-and-records"
+    },
+    "screenTransition": {
+      "kind": "fade",
+      "durationMs": 160,
+      "reducedMotion": "none"
     }
   },
   "languageToggle": {
@@ -120,5 +125,66 @@
         }
       }
     ]
+  },
+  "standardGame": {
+    "id": "standard-game",
+    "modeId": "standard-mode",
+    "api": {
+      "statePath": "/api/standard/state",
+      "guessPath": "/api/standard/guess",
+      "nextPath": "/api/standard/next",
+      "skipShortVideoPath": "/api/standard/skip-short-video",
+      "restartPath": "/api/standard/restart"
+    },
+    "layout": {
+      "kind": "video-left-status-right",
+      "resultKind": "centered-summary",
+      "allowsCards": false
+    },
+    "video": {
+      "hidePrePlayPoster": true
+    },
+    "input": {
+      "name": "reviewCountGuess",
+      "type": "integer",
+      "min": 50
+    },
+    "labels": {
+      "videoLabelKey": "game.standard.video.label",
+      "guessLabelKey": "game.standard.guess.label",
+      "guessHintKey": "game.standard.guess.hint",
+      "submitButtonKey": "game.standard.submit",
+      "nextButtonKey": "game.standard.next",
+      "restartButtonKey": "game.standard.restart",
+      "returnMenuButtonKey": "game.standard.returnMenu",
+      "healthLabelKey": "game.standard.health",
+      "scoreLabelKey": "game.standard.score",
+      "streakLabelKey": "game.standard.streak",
+      "guessNumberLabelKey": "game.standard.guessNumber",
+      "gameInfoHeadingKey": "game.standard.gameInfo",
+      "reviewCountLabelKey": "game.standard.reviewCount",
+      "waitingRevealKey": "game.standard.waitingReveal",
+      "resultCorrectKey": "game.standard.result.correct",
+      "resultDamagedKey": "game.standard.result.damaged",
+      "resultErrorPercentKey": "game.standard.result.errorPercent",
+      "resultScoreKey": "game.standard.result.score",
+      "loadingKey": "game.standard.loading",
+      "gameOverHeadingKey": "game.standard.gameOver",
+      "finalScoreLabelKey": "game.standard.finalScore",
+      "finalStreakLabelKey": "game.standard.finalStreak",
+      "lastGameHeadingKey": "game.standard.lastGame",
+      "newHighScoreKey": "game.standard.newHighScore",
+      "newBestStreakKey": "game.standard.newBestStreak",
+      "noRecordNoticeKey": "game.standard.noRecordNotice"
+    },
+    "errorMessages": {
+      "auth_required": { "messageKey": "game.standard.error.authRequired" },
+      "invalid_guess": { "messageKey": "game.standard.error.invalidGuess" },
+      "guess_required": { "messageKey": "game.standard.error.guessRequired" },
+      "candidate_unavailable": { "messageKey": "game.standard.error.candidateUnavailable" },
+      "steam_request_failed": { "messageKey": "game.standard.error.steamRequestFailed" },
+      "skip_not_allowed": { "messageKey": "game.standard.error.skipNotAllowed" },
+      "state_unavailable": { "messageKey": "game.standard.error.stateUnavailable" }
+    }
   }
 }

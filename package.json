@@ -8,7 +8,10 @@
   },
   "scripts": {
     "dev": "node scripts/serve.mjs",
-    "test": "node --test tests/landing-page-contract.test.mjs",
+    "test": "node --test tests/landing-page-contract.test.mjs tests/standard-mode-contract.test.mjs",
     "verify": "node scripts/verify.mjs"
+  },
+  "dependencies": {
+    "hls.js": "^1.6.16"
   }
 }

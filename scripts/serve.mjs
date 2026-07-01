@@ -1,5 +1,5 @@
 import { createReadStream } from "node:fs";
-import { stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import crypto from "node:crypto";
 import path from "node:path";
@@ -14,8 +14,13 @@ import {
   createHttpFetch,
   resolveProxyUrl
 } from "../src/server/http-client.mjs";
+import { createStandardCandidatePool } from "../src/server/standard-candidate-pool.mjs";
+import { createStandardModeRunner, StandardModeError } from "../src/server/standard-mode-runner.mjs";
+import { createStandardModeStore } from "../src/server/standard-mode-store.mjs";
+import { createSteamStandardCatalog } from "../src/server/steam-standard-catalog.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const standardModeConfig = await readJsonFile(path.join(root, "data/game/standard-mode.json"));
 const preferredPort = Number.parseInt(process.env.PORT ?? "5173", 10);
 const host = "127.0.0.1";
 const maxPortAttempts = 20;
@@ -25,6 +30,24 @@ const sessions = new Map();
 const steamProxyUrl = resolveProxyUrl();
 const steamFetch = createHttpFetch({
   proxyUrl: steamProxyUrl
+});
+const standardModeStore = createStandardModeStore({
+  storePath: path.join(root, standardModeConfig.store.path)
+});
+const standardCandidatePool = createStandardCandidatePool({
+  poolPath: path.join(root, standardModeConfig.candidatePool.path),
+  schemaVersion: standardModeConfig.candidatePool.schemaVersion,
+  maxEntriesPerBucket: standardModeConfig.candidatePool.maxEntriesPerBucket
+});
+const standardModeCatalog = createSteamStandardCatalog({
+  config: standardModeConfig,
+  fetchImpl: steamFetch,
+  candidatePool: standardCandidatePool
+});
+const standardModeRunner = createStandardModeRunner({
+  config: standardModeConfig,
+  catalog: standardModeCatalog,
+  store: standardModeStore
 });
 
 const mimeTypes = new Map([
@@ -59,6 +82,31 @@ const server = createServer(async (request, response) => {
       return;
     }
 
+    if (requestUrl.pathname === "/api/standard/state") {
+      await handleStandardApi(request, response, "state");
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/standard/guess") {
+      await handleStandardApi(request, response, "guess");
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/standard/next") {
+      await handleStandardApi(request, response, "next");
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/standard/skip-short-video") {
+      await handleStandardApi(request, response, "skip-short-video");
+      return;
+    }
+
+    if (requestUrl.pathname === "/api/standard/restart") {
+      await handleStandardApi(request, response, "restart");
+      return;
+    }
+
     await serveStatic(requestUrl, response);
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
@@ -86,6 +134,45 @@ function handleSteamLogin(_request, response, requestUrl) {
       sameSite: "Lax"
     })
   ]);
+}
+
+async function handleStandardApi(request, response, action) {
+  const session = getRequestSession(request);
+
+  try {
+    if (action === "state") {
+      assertMethod(request, "GET");
+      json(response, await standardModeRunner.getState(session));
+      return;
+    }
+
+    if (action === "guess") {
+      assertMethod(request, "POST");
+      json(response, await standardModeRunner.guess(session, await readJsonBody(request)));
+      return;
+    }
+
+    if (action === "next") {
+      assertMethod(request, "POST");
+      json(response, await standardModeRunner.next(session));
+      return;
+    }
+
+    if (action === "skip-short-video") {
+      assertMethod(request, "POST");
+      json(response, await standardModeRunner.skipShortVideo(session, await readJsonBody(request)));
+      return;
+    }
+
+    assertMethod(request, "POST");
+    json(response, await standardModeRunner.restart(session));
+  } catch (error) {
+    if (error instanceof StandardModeError) {
+      errorJson(response, error.status, error.code);
+      return;
+    }
+    throw error;
+  }
 }
 
 async function handleSteamCallback(request, response, requestUrl) {
@@ -142,8 +229,7 @@ function handleLogout(request, response) {
 }
 
 async function handleSession(request, response) {
-  const cookies = parseCookies(request.headers.cookie);
-  const session = sessions.get(cookies.get(sessionCookieName));
+  const session = getRequestSession(request);
 
   if (session?.steamId && !session.displayName) {
     const profile = await loadSteamProfile(session.steamId, {
@@ -163,6 +249,11 @@ async function handleSession(request, response) {
         }
       : null
   });
+}
+
+function getRequestSession(request) {
+  const cookies = parseCookies(request.headers.cookie);
+  return sessions.get(cookies.get(sessionCookieName));
 }
 
 async function serveStatic(requestUrl, response) {
@@ -224,6 +315,39 @@ function json(response, payload) {
     "Cache-Control": "no-store"
   });
   response.end(body);
+}
+
+function errorJson(response, status, code) {
+  const body = JSON.stringify({ error: code });
+  response.writeHead(status, {
+    "Content-Length": Buffer.byteLength(body),
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store"
+  });
+  response.end(body);
+}
+
+async function readJsonBody(request) {
+  const chunks = [];
+  for await (const chunk of request) {
+    chunks.push(chunk);
+  }
+
+  if (chunks.length === 0) {
+    return {};
+  }
+
+  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+}
+
+function assertMethod(request, expectedMethod) {
+  if (request.method !== expectedMethod) {
+    throw new StandardModeError("method_not_allowed", 405);
+  }
+}
+
+async function readJsonFile(filePath) {
+  return JSON.parse(await readFile(filePath, "utf8"));
 }
 
 function requestOrigin(request) {

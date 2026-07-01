@@ -80,7 +80,7 @@ npm run verify
 - `scripts/`：仓库级自动化入口；外部环境只能调用公开 npm scripts。
 - `docs/`：设计决策、数据模型、接口说明和迁移记录。
 
-当前阶段实现数据驱动的 Steam OpenID 登录入口、服务端 session、登出、左上角 Steam 用户名/头像展示、主菜单界面、标准模式描述栏和标准模式游戏页跳转骨架；不实现实际玩法。头像和用户名优先通过 `STEAM_WEB_API_KEY` 调用 Steam Web API，未配置时允许服务端降级读取公开 Steam Community profile XML。
+当前阶段实现数据驱动的 Steam OpenID 登录入口、服务端 session、登出、左上角 Steam 用户名/头像展示、主菜单界面、标准模式描述栏和标准模式游戏页。标准模式使用真实 Steam 数据准备 10 槽队列，先落地输入校验、揭晓、计算猜测误差、按误差率计分、超过 200% 误差扣血、血空结算、服务端历史最佳和已猜游戏持久化；暂不实现自定义过滤集、已猜游戏清除页面或排行榜。头像和用户名优先通过 `STEAM_WEB_API_KEY` 调用 Steam Web API，未配置时允许服务端降级读取公开 Steam Community profile XML。
 
 ## 3. 验证要求
 
