@@ -10,8 +10,18 @@
   "appState": {
     "initialScreenId": "login",
     "authenticatedScreenId": "main-menu",
-    "stateStorageName": "gsc.authState",
-    "authenticatedValue": "authenticated"
+    "sessionSource": "server-cookie"
+  },
+  "auth": {
+    "provider": "steam-openid",
+    "loginPath": "/auth/steam",
+    "callbackPath": "/auth/steam/callback",
+    "sessionPath": "/api/session",
+    "logoutPath": "/auth/logout",
+    "profileFields": ["displayName", "steamId", "avatarUrl"],
+    "failureStatusKey": "landing.login.failed",
+    "sessionErrorStatusKey": "landing.login.sessionError",
+    "accountAriaLabelKey": "account.summaryLabel"
   },
   "layout": {
     "kind": "login-to-main-menu-flow",
@@ -32,13 +42,19 @@
         "role": "mode-selection",
         "headingKey": "mainMenu.heading",
         "ariaLabelKey": "mainMenu.ariaLabel"
+      },
+      {
+        "id": "standard-game",
+        "role": "gameplay",
+        "routePath": "/game/standard",
+        "headingKey": "game.standard.heading"
       }
     ],
     "mainMenu": {
       "kind": "horizontal-shift-with-right-description",
       "modeListShift": "left-on-mode-click",
       "descriptionReveal": "slide-from-right-after-click",
-      "descriptionContent": "empty-placeholder"
+      "descriptionContent": "mode-rules-and-records"
     }
   },
   "languageToggle": {
@@ -61,9 +77,7 @@
     "shape": "capsule",
     "colorToken": "steam-green",
     "pressAnimation": "subtle-press",
-    "actionKind": "local-auth-success",
-    "successScreenId": "main-menu",
-    "successDelayMs": 120
+    "actionKind": "steam-openid-redirect"
   },
   "mainMenu": {
     "id": "main-menu",
@@ -71,9 +85,38 @@
       {
         "id": "standard-mode",
         "labelKey": "mainMenu.standardMode.button",
+        "activeLabelKey": "mainMenu.standardMode.readyButton",
+        "startPath": "/game/standard",
+        "activeAnimation": "subtle-float",
         "description": {
           "surfaceId": "standard-mode-description",
-          "emptyContent": true
+          "layout": "mode-rules-and-records",
+          "sections": [
+            {
+              "id": "rules",
+              "headingKey": "mainMenu.standardMode.description.heading",
+              "bodyKey": "mainMenu.standardMode.description.body"
+            },
+            {
+              "id": "filters",
+              "headingKey": "mainMenu.standardMode.filters.heading",
+              "listItemKeys": [
+                "mainMenu.standardMode.filters.item.gameOnly",
+                "mainMenu.standardMode.filters.item.sfw",
+                "mainMenu.standardMode.filters.item.minReviews"
+              ]
+            }
+          ],
+          "records": [
+            {
+              "id": "high-score",
+              "labelKey": "mainMenu.standardMode.records.highScore"
+            },
+            {
+              "id": "best-combo",
+              "labelKey": "mainMenu.standardMode.records.bestCombo"
+            }
+          ]
         }
       }
     ]

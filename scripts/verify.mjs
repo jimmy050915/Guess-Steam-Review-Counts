@@ -24,6 +24,8 @@ const requiredPaths = [
   "src/client/index.html",
   "src/client/styles.css",
   "src/client/main.js",
+  "src/server/http-client.mjs",
+  "src/server/steam-openid.mjs",
   "src/shared/ui-contract.mjs",
   "scripts/serve.mjs",
   "tests/landing-page-contract.test.mjs",

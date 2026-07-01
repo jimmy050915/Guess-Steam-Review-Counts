@@ -1,4 +1,5 @@
 const KEY_SUFFIX = "Key";
+const KEY_LIST_SUFFIX = "Keys";
 
 export function getLocalizedText(bundle, key) {
   if (!bundle || typeof bundle !== "object") {
@@ -31,6 +32,16 @@ export function collectLocalizationKeys(value, keys = new Set()) {
         throw new Error(`Localization field ${name} must contain a key string`);
       }
       keys.add(nestedValue);
+    } else if (name.endsWith(KEY_LIST_SUFFIX)) {
+      if (!Array.isArray(nestedValue)) {
+        throw new Error(`Localization field ${name} must contain key strings`);
+      }
+      for (const key of nestedValue) {
+        if (typeof key !== "string" || key.length === 0) {
+          throw new Error(`Localization field ${name} must contain key strings`);
+        }
+        keys.add(key);
+      }
     } else {
       collectLocalizationKeys(nestedValue, keys);
     }
@@ -80,12 +91,36 @@ export function validateLandingPageConfig(config, localeBundles) {
     errors.push("app state authenticated screen must exist in layout screens");
   }
 
-  if (typeof config.appState?.stateStorageName !== "string" || config.appState.stateStorageName.length === 0) {
-    errors.push("app state must declare a storage name");
+  const standardGameScreen = config.layout?.screens?.find((screen) => screen.id === "standard-game");
+  if (standardGameScreen?.role !== "gameplay") {
+    errors.push("standard-game screen must declare gameplay role");
   }
 
-  if (typeof config.appState?.authenticatedValue !== "string" || config.appState.authenticatedValue.length === 0) {
-    errors.push("app state must declare an authenticated value");
+  if (standardGameScreen?.routePath !== "/game/standard") {
+    errors.push("standard-game screen route path must be /game/standard");
+  }
+
+  if (config.appState?.sessionSource !== "server-cookie") {
+    errors.push("app state session source must be server-cookie");
+  }
+
+  if (config.auth?.provider !== "steam-openid") {
+    errors.push("auth provider must be steam-openid");
+  }
+
+  for (const [fieldName, expectedValue] of Object.entries({
+    loginPath: "/auth/steam",
+    callbackPath: "/auth/steam/callback",
+    sessionPath: "/api/session",
+    logoutPath: "/auth/logout"
+  })) {
+    if (config.auth?.[fieldName] !== expectedValue) {
+      errors.push(`auth ${fieldName} must be ${expectedValue}`);
+    }
+  }
+
+  if (!Array.isArray(config.auth?.profileFields) || !config.auth.profileFields.includes("displayName") || !config.auth.profileFields.includes("steamId") || !config.auth.profileFields.includes("avatarUrl")) {
+    errors.push("auth profile fields must include displayName, steamId and avatarUrl");
   }
 
   if (config.loginButton?.shape !== "capsule") {
@@ -100,12 +135,8 @@ export function validateLandingPageConfig(config, localeBundles) {
     errors.push("login button must use the subtle-press animation token");
   }
 
-  if (config.loginButton?.actionKind !== "local-auth-success") {
-    errors.push("login button action must be local-auth-success");
-  }
-
-  if (config.loginButton?.successScreenId !== config.appState?.authenticatedScreenId) {
-    errors.push("login button success screen must match authenticated screen");
+  if (config.loginButton?.actionKind !== "steam-openid-redirect") {
+    errors.push("login button action must be steam-openid-redirect");
   }
 
   if (config.layout?.mainMenu?.kind !== "horizontal-shift-with-right-description") {
@@ -120,6 +151,10 @@ export function validateLandingPageConfig(config, localeBundles) {
     errors.push("main menu description must slide from the right after click");
   }
 
+  if (config.layout?.mainMenu?.descriptionContent !== "mode-rules-and-records") {
+    errors.push("main menu description content must use mode-rules-and-records");
+  }
+
   if (!Array.isArray(config.mainMenu?.modes) || config.mainMenu.modes.length === 0) {
     errors.push("main menu must declare at least one mode");
   }
@@ -128,8 +163,39 @@ export function validateLandingPageConfig(config, localeBundles) {
   if (!standardMode) {
     errors.push("main menu must declare standard-mode");
   } else {
-    if (standardMode.description?.emptyContent !== true) {
-      errors.push("standard-mode description must be an explicit empty placeholder");
+    if (standardMode.activeLabelKey !== "mainMenu.standardMode.readyButton") {
+      errors.push("standard-mode must declare the ready button label key");
+    }
+
+    if (standardMode.startPath !== "/game/standard") {
+      errors.push("standard-mode start path must be /game/standard");
+    }
+
+    if (standardMode.activeAnimation !== "subtle-float") {
+      errors.push("standard-mode active animation must be subtle-float");
+    }
+
+    if (standardMode.description?.surfaceId !== "standard-mode-description") {
+      errors.push("standard-mode description surface id must be standard-mode-description");
+    }
+
+    if (standardMode.description?.layout !== "mode-rules-and-records") {
+      errors.push("standard-mode description layout must be mode-rules-and-records");
+    }
+
+    const rulesSection = standardMode.description?.sections?.find((section) => section.id === "rules");
+    if (rulesSection?.headingKey !== "mainMenu.standardMode.description.heading" || rulesSection?.bodyKey !== "mainMenu.standardMode.description.body") {
+      errors.push("standard-mode rules section must declare heading and body localization keys");
+    }
+
+    const filtersSection = standardMode.description?.sections?.find((section) => section.id === "filters");
+    if (!Array.isArray(filtersSection?.listItemKeys) || filtersSection.listItemKeys.length !== 3) {
+      errors.push("standard-mode filter section must declare three list item keys");
+    }
+
+    const records = standardMode.description?.records ?? [];
+    if (!records.some((record) => record.id === "high-score") || !records.some((record) => record.id === "best-combo")) {
+      errors.push("standard-mode description must declare high score and best combo records");
     }
   }
 

@@ -9,7 +9,16 @@
   <body>
     <div class="page-shell">
       <header class="topbar">
-        <a class="brand" id="brandName" href="/" aria-label="Guess Steam Comments"></a>
+        <div class="topbar-left">
+          <a class="brand" id="brandName" href="/" aria-label="Guess Steam Comments"></a>
+          <div class="account-summary" id="accountSummary" hidden>
+            <img class="account-avatar" id="accountAvatar" alt="">
+            <span class="account-id" id="accountSteamId"></span>
+            <button class="logout-button" id="logoutButton" type="button">
+              <span id="logoutButtonText"></span>
+            </button>
+          </div>
+        </div>
         <nav class="language-switch" id="languageSwitch"></nav>
       </header>
 
@@ -34,6 +43,12 @@
               <div class="mode-list" id="modeList"></div>
             </div>
             <aside class="mode-description" id="modeDescription" aria-hidden="true"></aside>
+          </div>
+        </section>
+
+        <section class="game-screen" id="standardGameScreen" aria-labelledby="standardGameTitle" hidden>
+          <div class="game-stage">
+            <h1 class="game-title" id="standardGameTitle" tabindex="-1"></h1>
           </div>
         </section>
       </main>

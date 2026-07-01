@@ -2,7 +2,7 @@
 
 一个 Web 小游戏项目：玩家根据 Steam 游戏信息猜测某款游戏的评论数。
 
-当前阶段已建立仓库结构、协作规范、统一验证入口，以及介绍页、登录成功状态切换和主菜单界面。主菜单先提供“标准模式”入口，点击后展开右侧描述区域；不实现实际玩法、Steam API、本地代理或真实 Steam 登录。
+当前阶段已建立仓库结构、协作规范、统一验证入口、Steam OpenID 登录、服务端 session、登出、左上角 Steam 用户名/头像展示和主菜单界面。主菜单先提供“标准模式”入口，第一次点击展开右侧描述区域并让按钮轻微浮动，第二次点击进入标准模式游戏页骨架；不实现实际玩法。
 
 ## Commands
 
@@ -19,6 +19,10 @@ npm run verify
 ```powershell
 http://127.0.0.1:5173
 ```
+
+Steam 登录使用 OpenID，不需要把 Steam 密码交给本地页面。头像优先通过 `STEAM_WEB_API_KEY` 调用 `GetPlayerSummaries`；未配置该环境变量时，服务端会降级读取公开 Steam Community profile XML。
+
+如果 Windows 当前用户配置了系统代理，开发服务器会自动读取并用于服务端 Steam OpenID 校验请求；也可以通过 `HTTPS_PROXY` 或 `HTTP_PROXY` 环境变量显式指定代理。
 
 ## Project Layout
 
