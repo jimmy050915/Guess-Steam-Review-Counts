@@ -5,7 +5,7 @@ import {
 
 const STEAM_APP_LIST_URL = "https://api.steampowered.com/ISteamApps/GetAppList/v2/";
 const STEAM_APP_DETAILS_URL = "https://store.steampowered.com/api/appdetails";
-const STEAM_APP_REVIEWS_URL = "https://store.steampowered.com/appreviews";
+const STEAM_APP_REVIEWS_URL = "https://api.steampowered.com/IUserReviewsService/GetAppReviews/v1/";
 const STEAM_STORE_SEARCH_URL = "https://store.steampowered.com/search/results/";
 
 export class SteamCandidateError extends Error {
@@ -129,6 +129,8 @@ export function createSteamStandardCatalog({
       if (!(error instanceof SteamCandidateError)) {
         throw error;
       }
+      // An upstream failure is not a permanent qualification result.
+      return null;
     }
 
     if (!candidate) {
@@ -348,24 +350,30 @@ export function createSteamStandardCatalog({
   }
 
   async function loadReviewCount(appId) {
-    const url = new URL(`${STEAM_APP_REVIEWS_URL}/${appId}`);
-    url.searchParams.set("json", "1");
-    url.searchParams.set("num_per_page", "0");
-    url.searchParams.set("language", "all");
-    url.searchParams.set("purchase_type", "all");
+    const url = new URL(STEAM_APP_REVIEWS_URL);
+    url.searchParams.set("input_json", JSON.stringify({
+      appid: appId,
+      languages: ["all"],
+      purchase_type: 1, // All purchase types.
+      review_type: 0, // All review types; required for the first-page total.
+      day_range: 0, // No date limit.
+      num_per_page: 1
+    }));
 
-    let response = null;
     try {
-      response = await fetchImpl(url);
+      const response = await fetchImpl(url);
+      if (!response.ok) {
+        throw new SteamCandidateError("steam_request_failed");
+      }
+      const payload = await response.json();
+      const count = payload?.response?.query_summary?.total_reviews;
+      if (!Number.isSafeInteger(count) || count < 0) {
+        throw new SteamCandidateError("steam_request_failed");
+      }
+      return count;
     } catch {
       throw new SteamCandidateError("steam_request_failed");
     }
-    if (!response.ok) {
-      throw new SteamCandidateError("steam_request_failed");
-    }
-
-    const payload = await response.json();
-    return Number.parseInt(payload?.query_summary?.total_reviews, 10);
   }
 
   return {

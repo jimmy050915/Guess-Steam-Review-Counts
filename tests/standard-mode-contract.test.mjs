@@ -191,11 +191,20 @@ test("steam catalog skips invalid candidates and returns a real normalized candi
         });
       }
 
-      const appId = Number(url.pathname.split("/").at(-1));
+      assert.equal(url.origin + url.pathname, "https://api.steampowered.com/IUserReviewsService/GetAppReviews/v1/");
+      const reviewInput = JSON.parse(url.searchParams.get("input_json"));
+      assert.deepEqual(reviewInput, {
+        appid: reviewInput.appid,
+        languages: ["all"],
+        purchase_type: 1,
+        review_type: 0,
+        day_range: 0,
+        num_per_page: 1
+      });
+      assert.deepEqual([...url.searchParams.keys()], ["input_json"]);
+      assert.ok(reviewsByAppId.has(reviewInput.appid));
       return jsonResponse({
-        query_summary: {
-          total_reviews: reviewsByAppId.get(appId) ?? 0
-        }
+        response: { query_summary: { num_reviews: 1, total_reviews: reviewsByAppId.get(reviewInput.appid) } }
       });
     }
   });
@@ -236,10 +245,9 @@ test("steam catalog falls back to store search when Web API app list is unavaila
         });
       }
 
+      assert.equal(JSON.parse(url.searchParams.get("input_json")).appid, 220);
       return jsonResponse({
-        query_summary: {
-          total_reviews: 1000
-        }
+        response: { query_summary: { num_reviews: 1, total_reviews: 1000 } }
       });
     }
   });
@@ -254,6 +262,39 @@ test("steam catalog falls back to store search when Web API app list is unavaila
   const candidate = await catalog.findCandidate();
   assert.equal(candidate.appId, 220);
   assert.equal(candidate.name, "Fallback Game");
+});
+
+test("steam catalog can retry a candidate after a temporary review API failure", async () => {
+  const config = await readJson("data/game/standard-mode.json");
+  let reviewCalls = 0;
+  const catalog = createSteamStandardCatalog({
+    config,
+    random: () => 0,
+    fetchImpl: async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname.includes("GetAppList")) {
+        return jsonResponse({ applist: { apps: [{ appid: 220 }] } });
+      }
+      if (url.pathname.includes("appdetails")) {
+        return jsonResponse({
+          220: { success: true, data: validDetailsFor(220, "Retry Game") }
+        });
+      }
+      assert.equal(JSON.parse(url.searchParams.get("input_json")).appid, 220);
+      reviewCalls += 1;
+      if (reviewCalls === 1) {
+        return jsonResponse({}, { ok: false, status: 429 });
+      }
+      if (reviewCalls === 2) {
+        return jsonResponse({ response: { query_summary: { num_reviews: 1 } } });
+      }
+      return jsonResponse({ response: { query_summary: { total_reviews: 1000 } } });
+    }
+  });
+
+  await assert.rejects(catalog.findCandidate(), { code: "candidate_unavailable" });
+  await assert.rejects(catalog.findCandidate(), { code: "candidate_unavailable" });
+  assert.equal((await catalog.findCandidate()).reviewCount, 1000);
 });
 
 test("standard runner validates guesses, reveals results, refills queue and persists records", async () => {
